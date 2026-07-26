@@ -169,6 +169,38 @@
     margin-bottom: 14px;
   }
 
+  .info-section {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .info-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sub);
+    margin-bottom: 8px;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 10px;
+  }
+  .info-field { display: flex; flex-direction: column; gap: 3px; }
+  .info-field.span-2 { grid-column: 1 / -1; }
+  .info-field label { font-size: 11px; color: var(--sub); }
+  .info-field input {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 8px;
+    font-size: 13px;
+    background: var(--card-bg);
+    color: var(--text);
+    outline: none;
+    min-width: 0;
+  }
+  .info-field input:focus { border-color: var(--accent); }
+
   .preset-row {
     display: flex;
     flex-wrap: wrap;
@@ -396,10 +428,28 @@
     return 't-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
   }
 
+  function makeEmptyFlight() {
+    return { outboundNo: '', outboundAt: '', returnNo: '', returnAt: '' };
+  }
+
+  function makeEmptyStay() {
+    return { name: '', address: '', checkIn: '', checkOut: '' };
+  }
+
+  function ensureTripDefaults(trip) {
+    if (!trip.flight) trip.flight = makeEmptyFlight();
+    if (!trip.stay) trip.stay = makeEmptyStay();
+    return trip;
+  }
+
   function loadState() {
     try {
       const raw = localStorage.getItem(TRIPS_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        parsed.trips.forEach(ensureTripDefaults);
+        return parsed;
+      }
     } catch (e) {}
 
     // 이전 버전(단일 목록) 데이터가 있으면 '기본 여행'으로 이전
@@ -409,7 +459,7 @@
         const oldItems = JSON.parse(oldRaw);
         if (Array.isArray(oldItems) && oldItems.length > 0) {
           const id = makeId();
-          return { trips: [{ id, name: '기본 여행', items: oldItems }], activeTripId: id };
+          return { trips: [{ id, name: '기본 여행', items: oldItems, flight: makeEmptyFlight(), stay: makeEmptyStay() }], activeTripId: id };
         }
       }
     } catch (e) {}
@@ -490,6 +540,54 @@
     nameEl.className = 'active-trip-name';
     nameEl.textContent = trip.name;
     tripContent.appendChild(nameEl);
+
+    function buildInfoField(labelText, type, value, onChange) {
+      const field = document.createElement('div');
+      field.className = 'info-field';
+      const label = document.createElement('label');
+      label.textContent = labelText;
+      const input = document.createElement('input');
+      input.type = type;
+      input.value = value || '';
+      input.addEventListener('change', () => onChange(input.value));
+      field.appendChild(label);
+      field.appendChild(input);
+      return field;
+    }
+
+    const flightSection = document.createElement('div');
+    flightSection.className = 'info-section';
+    const flightTitle = document.createElement('div');
+    flightTitle.className = 'info-title';
+    flightTitle.textContent = '✈️ 비행기 정보';
+    flightSection.appendChild(flightTitle);
+    const flightGrid = document.createElement('div');
+    flightGrid.className = 'info-grid';
+    flightGrid.appendChild(buildInfoField('출발 항공편', 'text', trip.flight.outboundNo, v => { trip.flight.outboundNo = v; saveState(); }));
+    flightGrid.appendChild(buildInfoField('출발 일시', 'datetime-local', trip.flight.outboundAt, v => { trip.flight.outboundAt = v; saveState(); }));
+    flightGrid.appendChild(buildInfoField('귀국 항공편', 'text', trip.flight.returnNo, v => { trip.flight.returnNo = v; saveState(); }));
+    flightGrid.appendChild(buildInfoField('귀국 일시', 'datetime-local', trip.flight.returnAt, v => { trip.flight.returnAt = v; saveState(); }));
+    flightSection.appendChild(flightGrid);
+    tripContent.appendChild(flightSection);
+
+    const staySection = document.createElement('div');
+    staySection.className = 'info-section';
+    const stayTitle = document.createElement('div');
+    stayTitle.className = 'info-title';
+    stayTitle.textContent = '🏨 숙소 정보';
+    staySection.appendChild(stayTitle);
+    const stayGrid = document.createElement('div');
+    stayGrid.className = 'info-grid';
+    const stayNameField = buildInfoField('숙소명', 'text', trip.stay.name, v => { trip.stay.name = v; saveState(); });
+    stayNameField.classList.add('span-2');
+    const stayAddrField = buildInfoField('주소', 'text', trip.stay.address, v => { trip.stay.address = v; saveState(); });
+    stayAddrField.classList.add('span-2');
+    stayGrid.appendChild(stayNameField);
+    stayGrid.appendChild(stayAddrField);
+    stayGrid.appendChild(buildInfoField('체크인', 'date', trip.stay.checkIn, v => { trip.stay.checkIn = v; saveState(); }));
+    stayGrid.appendChild(buildInfoField('체크아웃', 'date', trip.stay.checkOut, v => { trip.stay.checkOut = v; saveState(); }));
+    staySection.appendChild(stayGrid);
+    tripContent.appendChild(staySection);
 
     const presetRow = document.createElement('div');
     presetRow.className = 'preset-row';
@@ -675,7 +773,7 @@
     const name = newTripInput.value.trim();
     if (!name) return;
     const id = makeId();
-    state.trips.push({ id, name, items: [] });
+    state.trips.push({ id, name, items: [], flight: makeEmptyFlight(), stay: makeEmptyStay() });
     state.activeTripId = id;
     newTripInput.value = '';
     saveState();
