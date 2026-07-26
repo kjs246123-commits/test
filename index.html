@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>여행 준비물 체크리스트</title>
+<style>
+  :root {
+    --bg: #f5f6fa;
+    --card-bg: #ffffff;
+    --text: #2d3436;
+    --sub: #636e72;
+    --accent: #0984e3;
+    --border: #e1e4e8;
+    --done: #b2bec3;
+    --chip-bg: #eef2f7;
+    --chip-text: #2d3436;
+  }
+  :root[data-theme="dark"] {
+    --bg: #1a1d21;
+    --card-bg: #24282d;
+    --text: #f0f1f3;
+    --sub: #9aa0a6;
+    --border: #3a3f45;
+    --done: #6b7178;
+    --chip-bg: #2f343a;
+    --chip-text: #f0f1f3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1d21;
+      --card-bg: #24282d;
+      --text: #f0f1f3;
+      --sub: #9aa0a6;
+      --border: #3a3f45;
+      --done: #6b7178;
+      --chip-bg: #2f343a;
+      --chip-text: #f0f1f3;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 40px 16px;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .wrap {
+    max-width: 460px;
+    margin: 0 auto;
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px 24px 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    position: relative;
+  }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 16px;
+  }
+  h1 { font-size: 20px; margin: 0; text-align: center; }
+  #themeToggle {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 1px solid var(--border);
+    background: var(--chip-bg);
+    color: var(--text);
+    border-radius: 999px;
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #themeToggle:hover { opacity: 0.85; }
+
+  .preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  .preset-btn {
+    flex: 1;
+    min-width: 70px;
+    border: 1px solid var(--border);
+    background: var(--chip-bg);
+    color: var(--chip-text);
+    border-radius: 8px;
+    padding: 8px 6px;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .progress-box { margin-bottom: 18px; }
+  .progress-text {
+    font-size: 14px;
+    color: var(--sub);
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .progress-text strong { color: var(--accent); }
+  .progress-bar-bg {
+    background: var(--border);
+    border-radius: 8px;
+    height: 8px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    background: var(--accent);
+    height: 100%;
+    width: 0%;
+    transition: width 0.25s ease;
+  }
+
+  .add-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+  .add-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    outline: none;
+    background: var(--card-bg);
+    color: var(--text);
+  }
+  .add-row select {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 6px;
+    font-size: 13px;
+    background: var(--card-bg);
+    color: var(--text);
+    outline: none;
+  }
+  .add-row input:focus, .add-row select:focus { border-color: var(--accent); }
+  .add-row button {
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .add-row button:hover { opacity: 0.9; }
+
+  .category-group { margin-bottom: 16px; }
+  .category-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sub);
+    margin-bottom: 4px;
+    padding-left: 2px;
+  }
+
+  ul.items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  li.item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 2px;
+    border-bottom: 1px solid #f0f1f3;
+  }
+  :root[data-theme="dark"] li.item { border-bottom-color: #2f343a; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) li.item { border-bottom-color: #2f343a; }
+  }
+  li.item:last-child { border-bottom: none; }
+  li.item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  li.item span.label {
+    flex: 1;
+    font-size: 14px;
+    word-break: break-word;
+    cursor: text;
+    padding: 3px 4px;
+    border-radius: 4px;
+  }
+  li.item span.label:hover { background: var(--chip-bg); }
+  li.item.checked span.label {
+    text-decoration: line-through;
+    color: var(--done);
+  }
+  li.item input.edit-input {
+    flex: 1;
+    font-size: 14px;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 2px 4px;
+    background: var(--card-bg);
+    color: var(--text);
+    outline: none;
+  }
+  li.item .del-btn {
+    border: none;
+    background: none;
+    color: var(--sub);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+  li.item .del-btn:hover { opacity: 1; color: #d63031; }
+
+  .empty {
+    text-align: center;
+    color: var(--sub);
+    font-size: 13px;
+    padding: 20px 0;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top-row">
+    <h1>✈️ 여행 준비물 체크리스트</h1>
+    <button id="themeToggle" title="다크모드 전환">🌙</button>
+  </div>
+
+  <div class="preset-row">
+    <button class="preset-btn" data-preset="overseas">해외</button>
+    <button class="preset-btn" data-preset="domestic">국내</button>
+    <button class="preset-btn" data-preset="camping">캠핑</button>
+    <button class="preset-btn" data-preset="business">출장</button>
+  </div>
+
+  <div class="progress-box">
+    <div class="progress-text" id="progressText">0개중 0개 완료</div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+  </div>
+
+  <div class="add-row">
+    <input type="text" id="newItemInput" placeholder="준비물을 입력하세요" maxlength="40">
+    <select id="newItemCategory"></select>
+    <button id="addBtn">추가</button>
+  </div>
+
+  <div id="categoryContainer"></div>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'travel-checklist-v2';
+  const THEME_KEY = 'travel-checklist-theme';
+
+  const CATEGORIES = ['서류', '전자기기', '의류', '세면도구', '기타'];
+
+  const PRESETS = {
+    overseas: {
+      label: '해외여행',
+      items: [
+        ['서류', '여권'], ['서류', '항공권/예약 확인서'], ['서류', '여행자보험'], ['서류', '국제운전면허증'],
+        ['전자기기', '휴대폰 충전기'], ['전자기기', '보조배터리'], ['전자기기', '멀티어댑터'], ['전자기기', '이어폰/헤드폰'],
+        ['의류', '속옷/양말'], ['의류', '상의/하의'], ['의류', '잠옷'], ['의류', '겉옷'],
+        ['세면도구', '칫솔/치약'], ['세면도구', '샴푸/바디워시'], ['세면도구', '선크림'], ['세면도구', '기초 화장품'],
+        ['기타', '현금/카드'], ['기타', '상비약'],
+      ],
+    },
+    domestic: {
+      label: '국내여행',
+      items: [
+        ['서류', '신분증'], ['서류', '예약 확인서'],
+        ['전자기기', '휴대폰 충전기'], ['전자기기', '보조배터리'],
+        ['의류', '속옷/양말'], ['의류', '상의/하의'],
+        ['세면도구', '칫솔/치약'], ['세면도구', '스킨/로션'],
+        ['기타', '현금/카드'],
+      ],
+    },
+    camping: {
+      label: '캠핑',
+      items: [
+        ['서류', '캠핑장 예약 확인증'],
+        ['전자기기', '랜턴'], ['전자기기', '보조배터리'], ['전자기기', '휴대폰 충전기'],
+        ['의류', '속옷/양말'], ['의류', '여벌옷'], ['의류', '우비'],
+        ['세면도구', '칫솔/치약'], ['세면도구', '물티슈'],
+        ['기타', '텐트'], ['기타', '침낭'], ['기타', '버너/코펠'], ['기타', '모기퇴치제'],
+      ],
+    },
+    business: {
+      label: '출장',
+      items: [
+        ['서류', '명함'], ['서류', '계약서/자료'], ['서류', '신분증'],
+        ['전자기기', '노트북'], ['전자기기', '충전기'], ['전자기기', '보조배터리'],
+        ['의류', '정장/셔츠'], ['의류', '여벌옷'],
+        ['세면도구', '기본 세면도구'],
+        ['기타', '다이어리/필기구'], ['기타', '명함지갑'],
+      ],
+    },
+  };
+
+  function loadItems() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return [];
+  }
+
+  function saveItems() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }
+
+  let items = loadItems();
+
+  const categoryContainer = document.getElementById('categoryContainer');
+  const inputEl = document.getElementById('newItemInput');
+  const categorySelect = document.getElementById('newItemCategory');
+  const addBtn = document.getElementById('addBtn');
+  const progressText = document.getElementById('progressText');
+  const progressFill = document.getElementById('progressFill');
+  const themeToggle = document.getElementById('themeToggle');
+
+  CATEGORIES.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    categorySelect.appendChild(opt);
+  });
+
+  function render() {
+    categoryContainer.innerHTML = '';
+
+    if (items.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = '아직 등록된 준비물이 없어요. 프리셋을 불러오거나 직접 추가해보세요.';
+      categoryContainer.appendChild(empty);
+    } else {
+      CATEGORIES.forEach(cat => {
+        const catItems = items
+          .map((item, idx) => ({ item, idx }))
+          .filter(x => x.item.category === cat);
+        if (catItems.length === 0) return;
+
+        const group = document.createElement('div');
+        group.className = 'category-group';
+
+        const title = document.createElement('div');
+        title.className = 'category-title';
+        title.textContent = `${cat} (${catItems.filter(x => x.item.checked).length}/${catItems.length})`;
+        group.appendChild(title);
+
+        const ul = document.createElement('ul');
+        ul.className = 'items';
+
+        catItems.forEach(({ item, idx }) => {
+          const li = document.createElement('li');
+          li.className = 'item' + (item.checked ? ' checked' : '');
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.checked = item.checked;
+          checkbox.addEventListener('change', () => {
+            item.checked = checkbox.checked;
+            saveItems();
+            render();
+          });
+
+          const label = document.createElement('span');
+          label.className = 'label';
+          label.textContent = item.label;
+          label.title = '클릭해서 수정';
+          label.addEventListener('click', () => startEdit(li, label, item, idx));
+
+          const delBtn = document.createElement('button');
+          delBtn.className = 'del-btn';
+          delBtn.textContent = '✕';
+          delBtn.title = '삭제';
+          delBtn.addEventListener('click', () => {
+            items.splice(idx, 1);
+            saveItems();
+            render();
+          });
+
+          li.appendChild(checkbox);
+          li.appendChild(label);
+          li.appendChild(delBtn);
+          ul.appendChild(li);
+        });
+
+        group.appendChild(ul);
+        categoryContainer.appendChild(group);
+      });
+    }
+
+    const total = items.length;
+    const done = items.filter(i => i.checked).length;
+    progressText.innerHTML = `${total}개중 <strong>${done}개</strong> 완료`;
+    progressFill.style.width = total ? (done / total * 100) + '%' : '0%';
+  }
+
+  function startEdit(li, label, item, idx) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'edit-input';
+    input.value = item.label;
+    input.maxLength = 40;
+    label.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let committed = false;
+    function commit() {
+      if (committed) return;
+      committed = true;
+      const val = input.value.trim();
+      item.label = val || item.label;
+      saveItems();
+      render();
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { input.blur(); }
+      if (e.key === 'Escape') { committed = true; render(); }
+    });
+  }
+
+  function addItem() {
+    const val = inputEl.value.trim();
+    if (!val) return;
+    items.push({ label: val, checked: false, category: categorySelect.value });
+    inputEl.value = '';
+    saveItems();
+    render();
+    inputEl.focus();
+  }
+
+  addBtn.addEventListener('click', addItem);
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addItem();
+  });
+
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.preset;
+      const preset = PRESETS[key];
+      if (items.length > 0 && !confirm(`현재 목록을 지우고 '${preset.label}' 프리셋을 불러올까요?`)) return;
+      items = preset.items.map(([category, label]) => ({ category, label, checked: false }));
+      saveItems();
+      render();
+    });
+  });
+
+  function applyTheme(theme) {
+    if (theme === 'dark' || theme === 'light') {
+      document.documentElement.setAttribute('data-theme', theme);
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    const isDark = theme === 'dark' || (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    themeToggle.textContent = isDark ? '☀️' : '🌙';
+  }
+
+  let currentTheme = localStorage.getItem(THEME_KEY) || 'auto';
+  applyTheme(currentTheme);
+
+  themeToggle.addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+      || (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    currentTheme = isDark ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, currentTheme);
+    applyTheme(currentTheme);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
