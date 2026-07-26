@@ -63,7 +63,7 @@
     align-items: center;
     justify-content: center;
     position: relative;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
   }
   h1 { font-size: 20px; margin: 0; text-align: center; }
   #themeToggle {
@@ -84,6 +84,90 @@
     justify-content: center;
   }
   #themeToggle:hover { opacity: 0.85; }
+
+  /* trip section */
+  .trip-section {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 20px;
+  }
+  .trip-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .trip-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--border);
+    background: var(--chip-bg);
+    color: var(--chip-text);
+    border-radius: 999px;
+    padding: 6px 6px 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .trip-chip.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+  }
+  .trip-chip .trip-del {
+    border: none;
+    background: rgba(0,0,0,0.08);
+    color: inherit;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .trip-chip.active .trip-del { background: rgba(255,255,255,0.25); }
+  .trip-chip .trip-del:hover { opacity: 0.8; }
+
+  .trip-add-row { display: flex; gap: 6px; }
+  .trip-add-row input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    outline: none;
+    background: var(--card-bg);
+    color: var(--text);
+  }
+  .trip-add-row input:focus { border-color: var(--accent); }
+  .trip-add-row button {
+    border: none;
+    background: #2d3436;
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  :root[data-theme="dark"] .trip-add-row button { background: #4a4f57; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .trip-add-row button { background: #4a4f57; }
+  }
+  .trip-add-row button:hover { opacity: 0.9; }
+
+  .active-trip-name {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
 
   .preset-row {
     display: flex;
@@ -246,30 +330,21 @@
     <button id="themeToggle" title="다크모드 전환">🌙</button>
   </div>
 
-  <div class="preset-row">
-    <button class="preset-btn" data-preset="overseas">해외</button>
-    <button class="preset-btn" data-preset="domestic">국내</button>
-    <button class="preset-btn" data-preset="camping">캠핑</button>
-    <button class="preset-btn" data-preset="business">출장</button>
+  <div class="trip-section">
+    <div class="trip-chips" id="tripChips"></div>
+    <div class="trip-add-row">
+      <input type="text" id="newTripInput" placeholder="여행 이름 (예: 2026년 8월 제주)" maxlength="30">
+      <button id="addTripBtn">여행 추가</button>
+    </div>
   </div>
 
-  <div class="progress-box">
-    <div class="progress-text" id="progressText">0개중 0개 완료</div>
-    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
-  </div>
-
-  <div class="add-row">
-    <input type="text" id="newItemInput" placeholder="준비물을 입력하세요" maxlength="40">
-    <select id="newItemCategory"></select>
-    <button id="addBtn">추가</button>
-  </div>
-
-  <div id="categoryContainer"></div>
+  <div id="tripContent"></div>
 </div>
 
 <script>
 (function () {
-  const STORAGE_KEY = 'travel-checklist-v2';
+  const OLD_STORAGE_KEY = 'travel-checklist-v2';
+  const TRIPS_KEY = 'travel-checklist-trips-v1';
   const THEME_KEY = 'travel-checklist-theme';
 
   const CATEGORIES = ['서류', '전자기기', '의류', '세면도구', '기타'];
@@ -317,157 +392,297 @@
     },
   };
 
-  function loadItems() {
+  function makeId() {
+    return 't-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+  }
+
+  function loadState() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(TRIPS_KEY);
       if (raw) return JSON.parse(raw);
     } catch (e) {}
-    return [];
+
+    // 이전 버전(단일 목록) 데이터가 있으면 '기본 여행'으로 이전
+    try {
+      const oldRaw = localStorage.getItem(OLD_STORAGE_KEY);
+      if (oldRaw) {
+        const oldItems = JSON.parse(oldRaw);
+        if (Array.isArray(oldItems) && oldItems.length > 0) {
+          const id = makeId();
+          return { trips: [{ id, name: '기본 여행', items: oldItems }], activeTripId: id };
+        }
+      }
+    } catch (e) {}
+
+    return { trips: [], activeTripId: null };
   }
 
-  function saveItems() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  function saveState() {
+    localStorage.setItem(TRIPS_KEY, JSON.stringify(state));
   }
 
-  let items = loadItems();
+  let state = loadState();
 
-  const categoryContainer = document.getElementById('categoryContainer');
-  const inputEl = document.getElementById('newItemInput');
-  const categorySelect = document.getElementById('newItemCategory');
-  const addBtn = document.getElementById('addBtn');
-  const progressText = document.getElementById('progressText');
-  const progressFill = document.getElementById('progressFill');
+  function getActiveTrip() {
+    return state.trips.find(t => t.id === state.activeTripId) || null;
+  }
+
+  const tripChipsEl = document.getElementById('tripChips');
+  const newTripInput = document.getElementById('newTripInput');
+  const addTripBtn = document.getElementById('addTripBtn');
+  const tripContent = document.getElementById('tripContent');
   const themeToggle = document.getElementById('themeToggle');
 
-  CATEGORIES.forEach(cat => {
-    const opt = document.createElement('option');
-    opt.value = cat;
-    opt.textContent = cat;
-    categorySelect.appendChild(opt);
-  });
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
 
-  function render() {
-    categoryContainer.innerHTML = '';
+  function renderTripChips() {
+    tripChipsEl.innerHTML = '';
+    state.trips.forEach(trip => {
+      const chip = document.createElement('div');
+      chip.className = 'trip-chip' + (trip.id === state.activeTripId ? ' active' : '');
 
-    if (items.length === 0) {
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = trip.name;
+      nameSpan.addEventListener('click', () => {
+        state.activeTripId = trip.id;
+        saveState();
+        renderAll();
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'trip-del';
+      delBtn.textContent = '✕';
+      delBtn.title = '여행 삭제';
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!confirm(`'${trip.name}' 여행을 삭제할까요? 담긴 준비물 목록도 함께 삭제돼요.`)) return;
+        state.trips = state.trips.filter(t => t.id !== trip.id);
+        if (state.activeTripId === trip.id) {
+          state.activeTripId = state.trips.length > 0 ? state.trips[0].id : null;
+        }
+        saveState();
+        renderAll();
+      });
+
+      chip.appendChild(nameSpan);
+      chip.appendChild(delBtn);
+      tripChipsEl.appendChild(chip);
+    });
+  }
+
+  function renderTripContent() {
+    tripContent.innerHTML = '';
+    const trip = getActiveTrip();
+
+    if (!trip) {
       const empty = document.createElement('div');
       empty.className = 'empty';
-      empty.textContent = '아직 등록된 준비물이 없어요. 프리셋을 불러오거나 직접 추가해보세요.';
-      categoryContainer.appendChild(empty);
-    } else {
-      CATEGORIES.forEach(cat => {
-        const catItems = items
-          .map((item, idx) => ({ item, idx }))
-          .filter(x => x.item.category === cat);
-        if (catItems.length === 0) return;
+      empty.textContent = '여행을 추가하면 여행별로 준비물을 관리할 수 있어요.';
+      tripContent.appendChild(empty);
+      return;
+    }
 
-        const group = document.createElement('div');
-        group.className = 'category-group';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'active-trip-name';
+    nameEl.textContent = trip.name;
+    tripContent.appendChild(nameEl);
 
-        const title = document.createElement('div');
-        title.className = 'category-title';
-        title.textContent = `${cat} (${catItems.filter(x => x.item.checked).length}/${catItems.length})`;
-        group.appendChild(title);
+    const presetRow = document.createElement('div');
+    presetRow.className = 'preset-row';
+    Object.keys(PRESETS).forEach(key => {
+      const btn = document.createElement('button');
+      btn.className = 'preset-btn';
+      btn.textContent = { overseas: '해외', domestic: '국내', camping: '캠핑', business: '출장' }[key];
+      btn.addEventListener('click', () => {
+        const preset = PRESETS[key];
+        if (trip.items.length > 0 && !confirm(`현재 목록을 지우고 '${preset.label}' 프리셋을 불러올까요?`)) return;
+        trip.items = preset.items.map(([category, label]) => ({ category, label, checked: false }));
+        saveState();
+        renderTripContent();
+      });
+      presetRow.appendChild(btn);
+    });
+    tripContent.appendChild(presetRow);
 
-        const ul = document.createElement('ul');
-        ul.className = 'items';
+    const progressBox = document.createElement('div');
+    progressBox.className = 'progress-box';
+    const progressText = document.createElement('div');
+    progressText.className = 'progress-text';
+    const progressBarBg = document.createElement('div');
+    progressBarBg.className = 'progress-bar-bg';
+    const progressFill = document.createElement('div');
+    progressFill.className = 'progress-bar-fill';
+    progressBarBg.appendChild(progressFill);
+    progressBox.appendChild(progressText);
+    progressBox.appendChild(progressBarBg);
+    tripContent.appendChild(progressBox);
 
-        catItems.forEach(({ item, idx }) => {
-          const li = document.createElement('li');
-          li.className = 'item' + (item.checked ? ' checked' : '');
+    const addRow = document.createElement('div');
+    addRow.className = 'add-row';
+    const inputEl = document.createElement('input');
+    inputEl.type = 'text';
+    inputEl.placeholder = '준비물을 입력하세요';
+    inputEl.maxLength = 40;
+    const categorySelect = document.createElement('select');
+    CATEGORIES.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat;
+      categorySelect.appendChild(opt);
+    });
+    const addBtn = document.createElement('button');
+    addBtn.textContent = '추가';
+    addRow.appendChild(inputEl);
+    addRow.appendChild(categorySelect);
+    addRow.appendChild(addBtn);
+    tripContent.appendChild(addRow);
 
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.checked = item.checked;
-          checkbox.addEventListener('change', () => {
-            item.checked = checkbox.checked;
-            saveItems();
-            render();
+    const categoryContainer = document.createElement('div');
+    tripContent.appendChild(categoryContainer);
+
+    function renderList() {
+      categoryContainer.innerHTML = '';
+
+      if (trip.items.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = '아직 등록된 준비물이 없어요. 프리셋을 불러오거나 직접 추가해보세요.';
+        categoryContainer.appendChild(empty);
+      } else {
+        CATEGORIES.forEach(cat => {
+          const catItems = trip.items
+            .map((item, idx) => ({ item, idx }))
+            .filter(x => x.item.category === cat);
+          if (catItems.length === 0) return;
+
+          const group = document.createElement('div');
+          group.className = 'category-group';
+
+          const title = document.createElement('div');
+          title.className = 'category-title';
+          title.textContent = `${cat} (${catItems.filter(x => x.item.checked).length}/${catItems.length})`;
+          group.appendChild(title);
+
+          const ul = document.createElement('ul');
+          ul.className = 'items';
+
+          catItems.forEach(({ item, idx }) => {
+            const li = document.createElement('li');
+            li.className = 'item' + (item.checked ? ' checked' : '');
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = item.checked;
+            checkbox.addEventListener('change', () => {
+              item.checked = checkbox.checked;
+              saveState();
+              renderList();
+              updateProgress();
+            });
+
+            const label = document.createElement('span');
+            label.className = 'label';
+            label.textContent = item.label;
+            label.title = '클릭해서 수정';
+            label.addEventListener('click', () => startEdit(label, item));
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'del-btn';
+            delBtn.textContent = '✕';
+            delBtn.title = '삭제';
+            delBtn.addEventListener('click', () => {
+              trip.items.splice(idx, 1);
+              saveState();
+              renderList();
+              updateProgress();
+            });
+
+            li.appendChild(checkbox);
+            li.appendChild(label);
+            li.appendChild(delBtn);
+            ul.appendChild(li);
           });
 
-          const label = document.createElement('span');
-          label.className = 'label';
-          label.textContent = item.label;
-          label.title = '클릭해서 수정';
-          label.addEventListener('click', () => startEdit(li, label, item, idx));
-
-          const delBtn = document.createElement('button');
-          delBtn.className = 'del-btn';
-          delBtn.textContent = '✕';
-          delBtn.title = '삭제';
-          delBtn.addEventListener('click', () => {
-            items.splice(idx, 1);
-            saveItems();
-            render();
-          });
-
-          li.appendChild(checkbox);
-          li.appendChild(label);
-          li.appendChild(delBtn);
-          ul.appendChild(li);
+          group.appendChild(ul);
+          categoryContainer.appendChild(group);
         });
+      }
 
-        group.appendChild(ul);
-        categoryContainer.appendChild(group);
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const total = trip.items.length;
+      const done = trip.items.filter(i => i.checked).length;
+      progressText.innerHTML = `${total}개중 <strong>${done}개</strong> 완료`;
+      progressFill.style.width = total ? (done / total * 100) + '%' : '0%';
+    }
+
+    function startEdit(label, item) {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'edit-input';
+      input.value = item.label;
+      input.maxLength = 40;
+      label.replaceWith(input);
+      input.focus();
+      input.select();
+
+      let committed = false;
+      function commit() {
+        if (committed) return;
+        committed = true;
+        const val = input.value.trim();
+        item.label = val || item.label;
+        saveState();
+        renderList();
+      }
+      input.addEventListener('blur', commit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { input.blur(); }
+        if (e.key === 'Escape') { committed = true; renderList(); }
       });
     }
 
-    const total = items.length;
-    const done = items.filter(i => i.checked).length;
-    progressText.innerHTML = `${total}개중 <strong>${done}개</strong> 완료`;
-    progressFill.style.width = total ? (done / total * 100) + '%' : '0%';
-  }
-
-  function startEdit(li, label, item, idx) {
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'edit-input';
-    input.value = item.label;
-    input.maxLength = 40;
-    label.replaceWith(input);
-    input.focus();
-    input.select();
-
-    let committed = false;
-    function commit() {
-      if (committed) return;
-      committed = true;
-      const val = input.value.trim();
-      item.label = val || item.label;
-      saveItems();
-      render();
+    function addItem() {
+      const val = inputEl.value.trim();
+      if (!val) return;
+      trip.items.push({ label: val, checked: false, category: categorySelect.value });
+      inputEl.value = '';
+      saveState();
+      renderList();
+      inputEl.focus();
     }
-    input.addEventListener('blur', commit);
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { input.blur(); }
-      if (e.key === 'Escape') { committed = true; render(); }
+
+    addBtn.addEventListener('click', addItem);
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addItem();
     });
+
+    renderList();
   }
 
-  function addItem() {
-    const val = inputEl.value.trim();
-    if (!val) return;
-    items.push({ label: val, checked: false, category: categorySelect.value });
-    inputEl.value = '';
-    saveItems();
-    render();
-    inputEl.focus();
+  function renderAll() {
+    renderTripChips();
+    renderTripContent();
   }
 
-  addBtn.addEventListener('click', addItem);
-  inputEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') addItem();
+  addTripBtn.addEventListener('click', () => {
+    const name = newTripInput.value.trim();
+    if (!name) return;
+    const id = makeId();
+    state.trips.push({ id, name, items: [] });
+    state.activeTripId = id;
+    newTripInput.value = '';
+    saveState();
+    renderAll();
   });
-
-  document.querySelectorAll('.preset-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.preset;
-      const preset = PRESETS[key];
-      if (items.length > 0 && !confirm(`현재 목록을 지우고 '${preset.label}' 프리셋을 불러올까요?`)) return;
-      items = preset.items.map(([category, label]) => ({ category, label, checked: false }));
-      saveItems();
-      render();
-    });
+  newTripInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addTripBtn.click();
   });
 
   function applyTheme(theme) {
@@ -491,7 +706,7 @@
     applyTheme(currentTheme);
   });
 
-  render();
+  renderAll();
 })();
 </script>
 </body>
