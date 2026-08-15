@@ -290,17 +290,6 @@
     color: var(--text);
     outline: none;
   }
-  .activity-add-form select {
-    flex-shrink: 0;
-    min-width: 0;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 2px;
-    font-size: 12.5px;
-    background: var(--card-bg);
-    color: var(--text);
-    outline: none;
-  }
   .activity-add-form input[type="text"],
   .activity-add-form input[type="url"] {
     flex: 1;
@@ -526,7 +515,6 @@
 
   const CATEGORIES = ['서류', '전자기기', '의류', '세면도구', '기타'];
 
-  const ACTIVITY_CATEGORIES = ['이동', '관광', '식사', '카페', '숙소', '기타'];
   // 활동 제목이 아래 key와 정확히 일치할 때만 대표 사진을 보여줌 (위키미디어 커먼즈에서 확인된 이미지만 등록)
   const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -1119,19 +1107,11 @@
         addRowTop.className = 'add-row-top';
         const timeInput = document.createElement('input');
         timeInput.type = 'time';
-        const catSelect = document.createElement('select');
-        ACTIVITY_CATEGORIES.forEach(cat => {
-          const opt = document.createElement('option');
-          opt.value = cat;
-          opt.textContent = cat;
-          catSelect.appendChild(opt);
-        });
         const titleInput = document.createElement('input');
         titleInput.type = 'text';
         titleInput.placeholder = '장소/활동';
         titleInput.maxLength = 40;
         addRowTop.appendChild(timeInput);
-        addRowTop.appendChild(catSelect);
         addRowTop.appendChild(titleInput);
 
         const addRowBottom = document.createElement('div');
@@ -1148,7 +1128,7 @@
           const val = titleInput.value.trim();
           if (!val) return;
           const link = linkInput.value.trim();
-          const newActivity = { time: timeInput.value, category: catSelect.value, title: val, link };
+          const newActivity = { time: timeInput.value, title: val, link };
           if (!link) newActivity.image = null;
           day.activities.push(newActivity);
           titleInput.value = '';
