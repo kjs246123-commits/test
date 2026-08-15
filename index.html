@@ -528,6 +528,7 @@
   const OLD_STORAGE_KEY = 'travel-checklist-v2';
   const TRIPS_KEY = 'travel-checklist-trips-v1';
   const THEME_KEY = 'travel-checklist-theme';
+  const JEJU_TRIP_ID = 'trip-jeju-2026-08-22';
 
   const CATEGORIES = ['서류', '전자기기', '의류', '세면도구', '기타'];
 
@@ -611,9 +612,8 @@
   }
 
   function makeJejuSeedTrip() {
-    const id = makeId();
     return {
-      id,
+      id: JEJU_TRIP_ID,
       name: '제주도 여행 (8/22-24)',
       items: [],
       flight: {
@@ -652,30 +652,42 @@
   }
 
   function loadState() {
+    let state = null;
+
     try {
       const raw = localStorage.getItem(TRIPS_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         parsed.trips.forEach(ensureTripDefaults);
-        return parsed;
+        state = parsed;
       }
     } catch (e) {}
 
     // 이전 버전(단일 목록) 데이터가 있으면 '기본 여행'으로 이전
-    try {
-      const oldRaw = localStorage.getItem(OLD_STORAGE_KEY);
-      if (oldRaw) {
-        const oldItems = JSON.parse(oldRaw);
-        if (Array.isArray(oldItems) && oldItems.length > 0) {
-          const id = makeId();
-          return { trips: [{ id, name: '기본 여행', items: oldItems, flight: makeEmptyFlight(), stay: makeEmptyStay() }], activeTripId: id };
+    if (!state) {
+      try {
+        const oldRaw = localStorage.getItem(OLD_STORAGE_KEY);
+        if (oldRaw) {
+          const oldItems = JSON.parse(oldRaw);
+          if (Array.isArray(oldItems) && oldItems.length > 0) {
+            const id = makeId();
+            state = { trips: [{ id, name: '기본 여행', items: oldItems, flight: makeEmptyFlight(), stay: makeEmptyStay(), itinerary: [] }], activeTripId: id };
+          }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
 
-    // 완전히 처음 방문한 경우, 제주도 여행 데이터를 미리 채워서 보여줌
-    const seedTrip = makeJejuSeedTrip();
-    return { trips: [seedTrip], activeTripId: seedTrip.id };
+    if (!state) {
+      state = { trips: [], activeTripId: null };
+    }
+
+    // 제주도 여행은 접속할 때마다 항상 기본 화면으로 보이도록 보장
+    if (!state.trips.some(t => t.id === JEJU_TRIP_ID)) {
+      state.trips.unshift(makeJejuSeedTrip());
+    }
+    state.activeTripId = JEJU_TRIP_ID;
+
+    return state;
   }
 
   function saveState() {
@@ -683,6 +695,7 @@
   }
 
   let state = loadState();
+  saveState();
 
   function getActiveTrip() {
     return state.trips.find(t => t.id === state.activeTripId) || null;
