@@ -201,7 +201,40 @@
   }
   .info-field input:focus { border-color: var(--accent); }
 
-  .itinerary-section { margin-bottom: 14px; }
+  .section-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .section-tabs::-webkit-scrollbar { height: 4px; }
+  .section-tab {
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    background: var(--chip-bg);
+    color: var(--chip-text);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .section-tab.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+  }
+  .section-tab-add { font-weight: 700; padding: 8px 12px; }
+  .section-panel { display: none; }
+  .section-panel.active { display: block; }
+  .panel-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sub);
+    margin-bottom: 10px;
+  }
   .day-block {
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -696,6 +729,7 @@
 
   let state = loadState();
   saveState();
+  let activeSection = 'info';
 
   function getActiveTrip() {
     return state.trips.find(t => t.id === state.activeTripId) || null;
@@ -723,6 +757,7 @@
       nameSpan.textContent = trip.name;
       nameSpan.addEventListener('click', () => {
         state.activeTripId = trip.id;
+        activeSection = 'info';
         saveState();
         renderAll();
       });
@@ -779,6 +814,39 @@
       return field;
     }
 
+    const tabsEl = document.createElement('div');
+    tabsEl.className = 'section-tabs';
+    tripContent.appendChild(tabsEl);
+
+    function makeTabButton(label, key, extraClass) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'section-tab' + (extraClass ? ' ' + extraClass : '');
+      btn.dataset.section = key;
+      btn.textContent = label;
+      btn.addEventListener('click', () => setActiveSection(key));
+      return btn;
+    }
+
+    function applyActiveSection() {
+      tabsEl.querySelectorAll('.section-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.section === activeSection);
+      });
+      tripContent.querySelectorAll('.section-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.dataset.section === activeSection);
+      });
+    }
+
+    function setActiveSection(key) {
+      activeSection = key;
+      applyActiveSection();
+    }
+
+    const panelInfo = document.createElement('div');
+    panelInfo.className = 'section-panel';
+    panelInfo.dataset.section = 'info';
+    tripContent.appendChild(panelInfo);
+
     const flightSection = document.createElement('div');
     flightSection.className = 'info-section';
     const flightTitle = document.createElement('div');
@@ -797,7 +865,7 @@
     passengersField.classList.add('span-2');
     flightGrid.appendChild(passengersField);
     flightSection.appendChild(flightGrid);
-    tripContent.appendChild(flightSection);
+    panelInfo.appendChild(flightSection);
 
     const staySection = document.createElement('div');
     staySection.className = 'info-section';
@@ -816,19 +884,23 @@
     stayGrid.appendChild(buildInfoField('체크인', 'date', trip.stay.checkIn, v => { trip.stay.checkIn = v; saveState(); }));
     stayGrid.appendChild(buildInfoField('체크아웃', 'date', trip.stay.checkOut, v => { trip.stay.checkOut = v; saveState(); }));
     staySection.appendChild(stayGrid);
-    tripContent.appendChild(staySection);
+    panelInfo.appendChild(staySection);
 
-    const itinerarySection = document.createElement('div');
-    itinerarySection.className = 'itinerary-section';
+    const panelPacking = document.createElement('div');
+    panelPacking.className = 'section-panel';
+    panelPacking.dataset.section = 'packing';
+    tripContent.appendChild(panelPacking);
 
-    const itineraryTitle = document.createElement('div');
-    itineraryTitle.className = 'info-title';
-    itineraryTitle.textContent = '📅 여행 일정';
-    itinerarySection.appendChild(itineraryTitle);
+    const daySectionsWrap = document.createElement('div');
+    tripContent.appendChild(daySectionsWrap);
 
-    const dayContainer = document.createElement('div');
-    itinerarySection.appendChild(dayContainer);
-
+    const addDayPanel = document.createElement('div');
+    addDayPanel.className = 'section-panel';
+    addDayPanel.dataset.section = 'add-day';
+    const addDayHint = document.createElement('div');
+    addDayHint.className = 'panel-title';
+    addDayHint.textContent = '새 날짜 추가';
+    addDayPanel.appendChild(addDayHint);
     const addDayRow = document.createElement('div');
     addDayRow.className = 'add-day-row';
     const newDayInput = document.createElement('input');
@@ -837,9 +909,8 @@
     addDayBtn.textContent = '날짜 추가';
     addDayRow.appendChild(newDayInput);
     addDayRow.appendChild(addDayBtn);
-    itinerarySection.appendChild(addDayRow);
-
-    tripContent.appendChild(itinerarySection);
+    addDayPanel.appendChild(addDayRow);
+    tripContent.appendChild(addDayPanel);
 
     function startEditActivity(span, activity, onDone) {
       const input = document.createElement('input');
@@ -868,26 +939,28 @@
     }
 
     function renderItinerary() {
-      dayContainer.innerHTML = '';
       const days = trip.itinerary.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
 
-      if (days.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'empty';
-        empty.textContent = '날짜를 추가해서 일정을 기록해보세요.';
-        dayContainer.appendChild(empty);
-        return;
-      }
+      tabsEl.innerHTML = '';
+      tabsEl.appendChild(makeTabButton('항공권 및 숙소 정보', 'info'));
+      tabsEl.appendChild(makeTabButton('준비물', 'packing'));
+      days.forEach((day, dayOrderIdx) => {
+        tabsEl.appendChild(makeTabButton(`${dayOrderIdx + 1}일차`, day.date));
+      });
+      tabsEl.appendChild(makeTabButton('+', 'add-day', 'section-tab-add'));
+
+      daySectionsWrap.innerHTML = '';
 
       days.forEach((day, dayOrderIdx) => {
         const block = document.createElement('div');
-        block.className = 'day-block';
+        block.className = 'section-panel day-block';
+        block.dataset.section = day.date;
 
         const header = document.createElement('div');
         header.className = 'day-header';
         const titleEl = document.createElement('span');
         titleEl.className = 'day-title';
-        titleEl.textContent = `${dayOrderIdx + 1}일차 · ${dayLabel(day.date)}`;
+        titleEl.textContent = dayLabel(day.date);
         const delDayBtn = document.createElement('button');
         delDayBtn.className = 'day-del';
         delDayBtn.textContent = '✕';
@@ -895,6 +968,7 @@
         delDayBtn.addEventListener('click', () => {
           if (!confirm(`${dayLabel(day.date)} 일정을 삭제할까요?`)) return;
           trip.itinerary = trip.itinerary.filter(d => d.date !== day.date);
+          if (activeSection === day.date) activeSection = 'info';
           saveState();
           renderItinerary();
         });
@@ -983,8 +1057,12 @@
         addActRow.appendChild(addActBtn);
         block.appendChild(addActRow);
 
-        dayContainer.appendChild(block);
+        daySectionsWrap.appendChild(block);
       });
+
+      const validSections = ['info', 'packing', 'add-day', ...days.map(d => d.date)];
+      if (!validSections.includes(activeSection)) activeSection = 'info';
+      applyActiveSection();
     }
 
     addDayBtn.addEventListener('click', () => {
@@ -994,10 +1072,16 @@
       trip.itinerary.push({ date: val, activities: [] });
       newDayInput.value = '';
       saveState();
+      activeSection = val;
       renderItinerary();
     });
 
     renderItinerary();
+
+    const packingTitle = document.createElement('div');
+    packingTitle.className = 'panel-title';
+    packingTitle.textContent = '🎒 준비물 체크리스트';
+    panelPacking.appendChild(packingTitle);
 
     const presetRow = document.createElement('div');
     presetRow.className = 'preset-row';
@@ -1014,7 +1098,7 @@
       });
       presetRow.appendChild(btn);
     });
-    tripContent.appendChild(presetRow);
+    panelPacking.appendChild(presetRow);
 
     const progressBox = document.createElement('div');
     progressBox.className = 'progress-box';
@@ -1027,7 +1111,7 @@
     progressBarBg.appendChild(progressFill);
     progressBox.appendChild(progressText);
     progressBox.appendChild(progressBarBg);
-    tripContent.appendChild(progressBox);
+    panelPacking.appendChild(progressBox);
 
     const addRow = document.createElement('div');
     addRow.className = 'add-row';
@@ -1047,10 +1131,10 @@
     addRow.appendChild(inputEl);
     addRow.appendChild(categorySelect);
     addRow.appendChild(addBtn);
-    tripContent.appendChild(addRow);
+    panelPacking.appendChild(addRow);
 
     const categoryContainer = document.createElement('div');
-    tripContent.appendChild(categoryContainer);
+    panelPacking.appendChild(categoryContainer);
 
     function renderList() {
       categoryContainer.innerHTML = '';
@@ -1183,8 +1267,9 @@
     const name = newTripInput.value.trim();
     if (!name) return;
     const id = makeId();
-    state.trips.push({ id, name, items: [], flight: makeEmptyFlight(), stay: makeEmptyStay() });
+    state.trips.push({ id, name, items: [], flight: makeEmptyFlight(), stay: makeEmptyStay(), itinerary: [] });
     state.activeTripId = id;
+    activeSection = 'info';
     newTripInput.value = '';
     saveState();
     renderAll();
