@@ -186,9 +186,9 @@
   ul.activities { list-style: none; margin: 0; padding: 0; }
   li.activity {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 2px;
+    flex-direction: column;
+    gap: 6px;
+    padding: 9px 2px;
     border-bottom: 1px solid #f0f1f3;
     font-size: 13px;
   }
@@ -197,13 +197,35 @@
     :root:not([data-theme="light"]) li.activity { border-bottom-color: #2f343a; }
   }
   li.activity:last-child { border-bottom: none; }
+  .activity-row { display: flex; align-items: center; gap: 8px; }
   li.activity .activity-time {
     color: var(--sub);
     font-variant-numeric: tabular-nums;
     flex-shrink: 0;
     width: 40px;
+    cursor: pointer;
+    padding: 3px 2px;
+    border-radius: 4px;
+  }
+  li.activity .activity-time:hover { background: var(--chip-bg); }
+  li.activity input.edit-time-input {
+    flex-shrink: 0;
+    width: 92px;
+    font-size: 12.5px;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 2px 4px;
+    background: var(--card-bg);
+    color: var(--text);
+    outline: none;
   }
   li.activity .activity-cat { flex-shrink: 0; font-size: 14px; }
+  li.activity .activity-map {
+    flex-shrink: 0;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+  }
   li.activity .activity-title {
     flex: 1;
     word-break: break-word;
@@ -233,6 +255,13 @@
     flex-shrink: 0;
   }
   li.activity .del-btn:hover { opacity: 1; color: #d63031; }
+  li.activity .activity-thumb {
+    width: 100%;
+    max-height: 140px;
+    object-fit: cover;
+    border-radius: 8px;
+    display: block;
+  }
   .activity-add-row {
     display: flex;
     gap: 6px;
@@ -484,6 +513,19 @@
 
   const ACTIVITY_CATEGORIES = ['이동', '관광', '식사', '카페', '숙소', '기타'];
   const ACTIVITY_EMOJI = { '이동': '🚗', '관광': '🏞️', '식사': '🍽️', '카페': '☕', '숙소': '🏨', '기타': '📌' };
+  // 활동 제목이 아래 key와 정확히 일치할 때만 대표 사진을 보여줌 (위키미디어 커먼즈에서 확인된 이미지만 등록)
+  const PLACE_IMAGES = {
+    '비자림': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Bijarim_Forest.jpg/500px-Bijarim_Forest.jpg',
+    '월정리 해변': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Jeju_woljeongri_beach_1.jpg/500px-Jeju_woljeongri_beach_1.jpg',
+    '김녕해변': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/%EA%B9%80%EB%85%95%EC%84%B1%EC%84%B8%EA%B8%B0%ED%95%B4%EB%B3%80.JPG/500px-%EA%B9%80%EB%85%95%EC%84%B1%EC%84%B8%EA%B8%B0%ED%95%B4%EB%B3%80.JPG',
+    '섭지코지': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Jeju_Island_Seopjikoji.jpg/500px-Jeju_Island_Seopjikoji.jpg',
+    '용눈이오름': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/%EC%9A%A9%EB%88%88%EC%9D%B4%EC%98%A4%EB%A6%84_(2018.05.08).jpg/500px-%EC%9A%A9%EB%88%88%EC%9D%B4%EC%98%A4%EB%A6%84_(2018.05.08).jpg',
+    '한라산 등반 (영실코스)': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Wooden_staircase_along_Yeongsil_Trail_with_the_mountains_of_Hallasan_Park_Jeju_Island_South_Korea.jpg/500px-Wooden_staircase_along_Yeongsil_Trail_with_the_mountains_of_Hallasan_Park_Jeju_Island_South_Korea.jpg',
+    '신창풍차해안도로': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Sinchang_Windmill_Coastal_Road_05.jpg/500px-Sinchang_Windmill_Coastal_Road_05.jpg',
+    '용머리해안': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/%EC%A0%9C%EC%A3%BC_%EC%9A%A9%EB%A8%B8%EB%A6%AC%ED%95%B4%EC%95%88_(Jeju_Yongmeori_Coast).jpg/500px-%EC%A0%9C%EC%A3%BC_%EC%9A%A9%EB%A8%B8%EB%A6%AC%ED%95%B4%EC%95%88_(Jeju_Yongmeori_Coast).jpg',
+    '곶자왈': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Gotjawal_Forest.jpg/500px-Gotjawal_Forest.jpg',
+    '테우리길': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Gotjawal_Forest.jpg/500px-Gotjawal_Forest.jpg',
+  };
   const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
   const PRESETS = {
@@ -608,8 +650,8 @@
           date: '2026-08-24',
           activities: [
             { time: '', category: '숙소', title: '체크아웃' },
-            { time: '', category: '관광', title: '영머리해안' },
-            { time: '', category: '관광', title: '곶자월' },
+            { time: '', category: '관광', title: '용머리해안' },
+            { time: '', category: '관광', title: '곶자왈' },
             { time: '', category: '관광', title: '테우리길' },
             { time: '', category: '식사', title: '점심식사' },
             { time: '', category: '이동', title: '조천으로 이동' },
@@ -632,6 +674,16 @@
       } else if (existingDay.activities.length === 0) {
         existingDay.activities = seedDay.activities.slice();
       }
+    });
+  }
+
+  // 이전 시드 데이터에 있던 오탈자(잘못된 지명)를 실제 저장된 데이터에서도 바로잡음
+  const TITLE_FIXES = { '영머리해안': '용머리해안', '곶자월': '곶자왈' };
+  function fixKnownTitleTypos(trip) {
+    trip.itinerary.forEach(day => {
+      day.activities.forEach(a => {
+        if (TITLE_FIXES[a.title]) a.title = TITLE_FIXES[a.title];
+      });
     });
   }
 
@@ -670,6 +722,7 @@
     if (!existingJejuTrip) {
       state.trips.unshift(makeJejuSeedTrip());
     } else {
+      fixKnownTitleTypos(existingJejuTrip);
       mergeSeedIntoJejuTrip(existingJejuTrip);
     }
     state.activeTripId = JEJU_TRIP_ID;
@@ -853,6 +906,30 @@
       });
     }
 
+    function startEditTime(span, activity, onDone) {
+      const input = document.createElement('input');
+      input.type = 'time';
+      input.className = 'edit-time-input';
+      input.value = activity.time || '';
+      span.replaceWith(input);
+      input.focus();
+
+      let committed = false;
+      function commit() {
+        if (committed) return;
+        committed = true;
+        activity.time = input.value;
+        saveState();
+        onDone();
+      }
+      input.addEventListener('blur', commit);
+      input.addEventListener('change', commit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { input.blur(); }
+        if (e.key === 'Escape') { committed = true; onDone(); }
+      });
+    }
+
     function renderItinerary() {
       const days = trip.itinerary.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
 
@@ -902,14 +979,27 @@
           const li = document.createElement('li');
           li.className = 'activity';
 
+          const row = document.createElement('div');
+          row.className = 'activity-row';
+
           const timeEl = document.createElement('span');
           timeEl.className = 'activity-time';
           timeEl.textContent = activity.time || '--:--';
+          timeEl.title = '클릭해서 시간 수정';
+          timeEl.addEventListener('click', () => startEditTime(timeEl, activity, renderItinerary));
 
           const catEl = document.createElement('span');
           catEl.className = 'activity-cat';
           catEl.textContent = ACTIVITY_EMOJI[activity.category] || '📌';
           catEl.title = activity.category;
+
+          const mapLink = document.createElement('a');
+          mapLink.className = 'activity-map';
+          mapLink.href = 'https://map.naver.com/p/search/' + encodeURIComponent(activity.title);
+          mapLink.target = '_blank';
+          mapLink.rel = 'noopener noreferrer';
+          mapLink.title = '네이버지도에서 보기';
+          mapLink.textContent = '📍';
 
           const titleSpan = document.createElement('span');
           titleSpan.className = 'activity-title';
@@ -927,10 +1017,23 @@
             renderItinerary();
           });
 
-          li.appendChild(timeEl);
-          li.appendChild(catEl);
-          li.appendChild(titleSpan);
-          li.appendChild(delBtn);
+          row.appendChild(timeEl);
+          row.appendChild(catEl);
+          row.appendChild(mapLink);
+          row.appendChild(titleSpan);
+          row.appendChild(delBtn);
+          li.appendChild(row);
+
+          const imgUrl = PLACE_IMAGES[activity.title];
+          if (imgUrl) {
+            const thumb = document.createElement('img');
+            thumb.className = 'activity-thumb';
+            thumb.src = imgUrl;
+            thumb.alt = activity.title;
+            thumb.loading = 'lazy';
+            li.appendChild(thumb);
+          }
+
           ul.appendChild(li);
         });
 
