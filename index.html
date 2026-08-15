@@ -125,6 +125,22 @@
     min-width: 0;
   }
   .info-field input:focus { border-color: var(--accent); }
+  .info-value-locked, .info-value-link {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 8px;
+    font-size: 13px;
+    background: var(--chip-bg);
+    min-width: 0;
+    word-break: break-word;
+  }
+  .info-value-locked { color: var(--text); }
+  .info-value-link {
+    display: block;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .info-value-link:hover { text-decoration: underline; }
 
   .section-tabs {
     display: flex;
@@ -219,31 +235,16 @@
     color: var(--text);
     outline: none;
   }
-  li.activity .activity-cat { flex-shrink: 0; font-size: 14px; }
-  li.activity .activity-map {
-    flex-shrink: 0;
-    font-size: 14px;
-    text-decoration: none;
-    cursor: pointer;
-  }
   li.activity .activity-title {
     flex: 1;
     word-break: break-word;
-    cursor: text;
+    cursor: pointer;
     padding: 3px 4px;
     border-radius: 4px;
+    color: var(--accent);
+    text-decoration: none;
   }
-  li.activity .activity-title:hover { background: var(--chip-bg); }
-  li.activity input.edit-input {
-    flex: 1;
-    font-size: 13px;
-    border: 1px solid var(--accent);
-    border-radius: 4px;
-    padding: 2px 4px;
-    background: var(--card-bg);
-    color: var(--text);
-    outline: none;
-  }
+  li.activity .activity-title:hover { background: var(--chip-bg); text-decoration: underline; }
   li.activity .del-btn {
     border: none;
     background: none;
@@ -512,7 +513,6 @@
   const CATEGORIES = ['서류', '전자기기', '의류', '세면도구', '기타'];
 
   const ACTIVITY_CATEGORIES = ['이동', '관광', '식사', '카페', '숙소', '기타'];
-  const ACTIVITY_EMOJI = { '이동': '🚗', '관광': '🏞️', '식사': '🍽️', '카페': '☕', '숙소': '🏨', '기타': '📌' };
   // 활동 제목이 아래 key와 정확히 일치할 때만 대표 사진을 보여줌 (위키미디어 커먼즈에서 확인된 이미지만 등록)
   const PLACE_IMAGES = {
     '비자림': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Bijarim_Forest.jpg/500px-Bijarim_Forest.jpg',
@@ -768,17 +768,38 @@
     nameEl.textContent = trip.name;
     tripContent.appendChild(nameEl);
 
-    function buildInfoField(labelText, type, value, onChange) {
+    function buildInfoField(labelText, type, value, onChange, opts) {
+      opts = opts || {};
       const field = document.createElement('div');
       field.className = 'info-field';
       const label = document.createElement('label');
       label.textContent = labelText;
-      const input = document.createElement('input');
-      input.type = type;
-      input.value = value || '';
-      input.addEventListener('change', () => onChange(input.value));
       field.appendChild(label);
-      field.appendChild(input);
+
+      if (value) {
+        // 값이 한 번 등록되면 잠가서 실수로 못 바꾸게 함
+        const displayText = type === 'datetime-local' ? value.replace('T', ' ') : value;
+        if (opts.isPlaceName) {
+          const link = document.createElement('a');
+          link.className = 'info-value-link';
+          link.href = 'https://map.naver.com/p/search/' + encodeURIComponent(value);
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = displayText;
+          field.appendChild(link);
+        } else {
+          const locked = document.createElement('div');
+          locked.className = 'info-value-locked';
+          locked.textContent = displayText;
+          field.appendChild(locked);
+        }
+      } else {
+        const input = document.createElement('input');
+        input.type = type;
+        input.value = '';
+        input.addEventListener('change', () => onChange(input.value));
+        field.appendChild(input);
+      }
       return field;
     }
 
@@ -843,7 +864,7 @@
     staySection.appendChild(stayTitle);
     const stayGrid = document.createElement('div');
     stayGrid.className = 'info-grid';
-    const stayNameField = buildInfoField('숙소명', 'text', trip.stay.name, v => { trip.stay.name = v; saveState(); });
+    const stayNameField = buildInfoField('숙소명', 'text', trip.stay.name, v => { trip.stay.name = v; saveState(); }, { isPlaceName: true });
     stayNameField.classList.add('span-2');
     const stayAddrField = buildInfoField('주소', 'text', trip.stay.address, v => { trip.stay.address = v; saveState(); });
     stayAddrField.classList.add('span-2');
@@ -880,32 +901,6 @@
     addDayPanel.appendChild(addDayRow);
     tripContent.appendChild(addDayPanel);
 
-    function startEditActivity(span, activity, onDone) {
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'edit-input';
-      input.value = activity.title;
-      input.maxLength = 40;
-      span.replaceWith(input);
-      input.focus();
-      input.select();
-
-      let committed = false;
-      function commit() {
-        if (committed) return;
-        committed = true;
-        const val = input.value.trim();
-        activity.title = val || activity.title;
-        saveState();
-        onDone();
-      }
-      input.addEventListener('blur', commit);
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { input.blur(); }
-        if (e.key === 'Escape') { committed = true; onDone(); }
-      });
-    }
-
     function startEditTime(span, activity, onDone) {
       const input = document.createElement('input');
       input.type = 'time';
@@ -920,13 +915,15 @@
         committed = true;
         activity.time = input.value;
         saveState();
-        onDone();
+        // blur는 다른 곳의 click보다 먼저 발생하므로, 재렌더링을 다음 틱으로
+        // 미뤄서 지금 막 클릭 중인 다른 요소(탭 버튼 등)가 사라지지 않게 함
+        setTimeout(onDone, 0);
       }
       input.addEventListener('blur', commit);
       input.addEventListener('change', commit);
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { input.blur(); }
-        if (e.key === 'Escape') { committed = true; onDone(); }
+        if (e.key === 'Escape') { committed = true; setTimeout(onDone, 0); }
       });
     }
 
@@ -988,24 +985,13 @@
           timeEl.title = '클릭해서 시간 수정';
           timeEl.addEventListener('click', () => startEditTime(timeEl, activity, renderItinerary));
 
-          const catEl = document.createElement('span');
-          catEl.className = 'activity-cat';
-          catEl.textContent = ACTIVITY_EMOJI[activity.category] || '📌';
-          catEl.title = activity.category;
-
-          const mapLink = document.createElement('a');
-          mapLink.className = 'activity-map';
-          mapLink.href = 'https://map.naver.com/p/search/' + encodeURIComponent(activity.title);
-          mapLink.target = '_blank';
-          mapLink.rel = 'noopener noreferrer';
-          mapLink.title = '네이버지도에서 보기';
-          mapLink.textContent = '📍';
-
-          const titleSpan = document.createElement('span');
-          titleSpan.className = 'activity-title';
-          titleSpan.textContent = activity.title;
-          titleSpan.title = '클릭해서 수정';
-          titleSpan.addEventListener('click', () => startEditActivity(titleSpan, activity, renderItinerary));
+          const titleLink = document.createElement('a');
+          titleLink.className = 'activity-title';
+          titleLink.href = 'https://map.naver.com/p/search/' + encodeURIComponent(activity.title);
+          titleLink.target = '_blank';
+          titleLink.rel = 'noopener noreferrer';
+          titleLink.title = '네이버지도에서 보기';
+          titleLink.textContent = activity.title;
 
           const delBtn = document.createElement('button');
           delBtn.className = 'del-btn';
@@ -1018,9 +1004,7 @@
           });
 
           row.appendChild(timeEl);
-          row.appendChild(catEl);
-          row.appendChild(mapLink);
-          row.appendChild(titleSpan);
+          row.appendChild(titleLink);
           row.appendChild(delBtn);
           li.appendChild(row);
 
