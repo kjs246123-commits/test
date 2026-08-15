@@ -201,6 +201,156 @@
   }
   .info-field input:focus { border-color: var(--accent); }
 
+  .itinerary-section { margin-bottom: 14px; }
+  .day-block {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .day-header .day-title { font-size: 13px; font-weight: 600; }
+  .day-header .day-del {
+    border: none;
+    background: none;
+    color: var(--sub);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 2px 6px;
+    opacity: 0.6;
+  }
+  .day-header .day-del:hover { opacity: 1; color: #d63031; }
+  ul.activities { list-style: none; margin: 0; padding: 0; }
+  li.activity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 2px;
+    border-bottom: 1px solid #f0f1f3;
+    font-size: 13px;
+  }
+  :root[data-theme="dark"] li.activity { border-bottom-color: #2f343a; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) li.activity { border-bottom-color: #2f343a; }
+  }
+  li.activity:last-child { border-bottom: none; }
+  li.activity .activity-time {
+    color: var(--sub);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    width: 40px;
+  }
+  li.activity .activity-cat { flex-shrink: 0; font-size: 14px; }
+  li.activity .activity-title {
+    flex: 1;
+    word-break: break-word;
+    cursor: text;
+    padding: 3px 4px;
+    border-radius: 4px;
+  }
+  li.activity .activity-title:hover { background: var(--chip-bg); }
+  li.activity input.edit-input {
+    flex: 1;
+    font-size: 13px;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 2px 4px;
+    background: var(--card-bg);
+    color: var(--text);
+    outline: none;
+  }
+  li.activity .del-btn {
+    border: none;
+    background: none;
+    color: var(--sub);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+  li.activity .del-btn:hover { opacity: 1; color: #d63031; }
+  .activity-add-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .activity-add-row input[type="time"] {
+    width: 92px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 4px;
+    font-size: 12.5px;
+    background: var(--card-bg);
+    color: var(--text);
+    outline: none;
+  }
+  .activity-add-row select {
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 2px;
+    font-size: 12.5px;
+    background: var(--card-bg);
+    color: var(--text);
+    outline: none;
+  }
+  .activity-add-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 12.5px;
+    background: var(--card-bg);
+    color: var(--text);
+    outline: none;
+  }
+  .activity-add-row button {
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12.5px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .activity-add-row button:hover { opacity: 0.9; }
+  .add-day-row { display: flex; gap: 6px; }
+  .add-day-row input[type="date"] {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    background: var(--card-bg);
+    color: var(--text);
+    outline: none;
+  }
+  .add-day-row button {
+    border: none;
+    background: #2d3436;
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  :root[data-theme="dark"] .add-day-row button { background: #4a4f57; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .add-day-row button { background: #4a4f57; }
+  }
+  .add-day-row button:hover { opacity: 0.9; }
+
   .preset-row {
     display: flex;
     flex-wrap: wrap;
@@ -381,6 +531,10 @@
 
   const CATEGORIES = ['서류', '전자기기', '의류', '세면도구', '기타'];
 
+  const ACTIVITY_CATEGORIES = ['이동', '관광', '식사', '카페', '숙소', '기타'];
+  const ACTIVITY_EMOJI = { '이동': '🚗', '관광': '🏞️', '식사': '🍽️', '카페': '☕', '숙소': '🏨', '기타': '📌' };
+  const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
   const PRESETS = {
     overseas: {
       label: '해외여행',
@@ -429,7 +583,11 @@
   }
 
   function makeEmptyFlight() {
-    return { outboundNo: '', outboundAt: '', returnNo: '', returnAt: '' };
+    return {
+      outboundNo: '', outboundAt: '', outboundReserveNo: '',
+      returnNo: '', returnAt: '', returnReserveNo: '',
+      passengers: '',
+    };
   }
 
   function makeEmptyStay() {
@@ -437,9 +595,60 @@
   }
 
   function ensureTripDefaults(trip) {
-    if (!trip.flight) trip.flight = makeEmptyFlight();
-    if (!trip.stay) trip.stay = makeEmptyStay();
+    trip.flight = Object.assign(makeEmptyFlight(), trip.flight || {});
+    trip.stay = Object.assign(makeEmptyStay(), trip.stay || {});
+    if (!trip.itinerary) trip.itinerary = [];
     return trip;
+  }
+
+  function dayLabel(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return dateStr;
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${mm}/${dd} (${WEEKDAYS[d.getDay()]})`;
+  }
+
+  function makeJejuSeedTrip() {
+    const id = makeId();
+    return {
+      id,
+      name: '제주도 여행 (8/22-24)',
+      items: [],
+      flight: {
+        outboundNo: '진에어 LJ503 (김포→제주)',
+        outboundAt: '2026-08-22T06:30',
+        outboundReserveNo: 'AP5DAZ',
+        returnNo: '제주항공 7C136 (제주→김포)',
+        returnAt: '2026-08-24T20:50',
+        returnReserveNo: 'DFQD7H',
+        passengers: '김지선, 이태림, 김혜진, 양정찬',
+      },
+      stay: {
+        name: '가든빛스테이',
+        address: '제주 서귀포시',
+        checkIn: '2026-08-22',
+        checkOut: '2026-08-24',
+      },
+      itinerary: [
+        {
+          date: '2026-08-22',
+          activities: [
+            { time: '', category: '이동', title: '렌터카 수령' },
+            { time: '', category: '관광', title: '비자림' },
+            { time: '', category: '관광', title: '월정리 해변' },
+            { time: '', category: '관광', title: '김녕해변' },
+            { time: '', category: '식사', title: '소금바치순이네 (돌문어볶음)' },
+            { time: '', category: '관광', title: '섭지코지' },
+            { time: '', category: '카페', title: '섭지코지 근처 카페' },
+            { time: '', category: '관광', title: '용눈이오름' },
+          ],
+        },
+        { date: '2026-08-23', activities: [] },
+        { date: '2026-08-24', activities: [] },
+      ],
+    };
   }
 
   function loadState() {
@@ -464,7 +673,9 @@
       }
     } catch (e) {}
 
-    return { trips: [], activeTripId: null };
+    // 완전히 처음 방문한 경우, 제주도 여행 데이터를 미리 채워서 보여줌
+    const seedTrip = makeJejuSeedTrip();
+    return { trips: [seedTrip], activeTripId: seedTrip.id };
   }
 
   function saveState() {
@@ -565,8 +776,13 @@
     flightGrid.className = 'info-grid';
     flightGrid.appendChild(buildInfoField('출발 항공편', 'text', trip.flight.outboundNo, v => { trip.flight.outboundNo = v; saveState(); }));
     flightGrid.appendChild(buildInfoField('출발 일시', 'datetime-local', trip.flight.outboundAt, v => { trip.flight.outboundAt = v; saveState(); }));
+    flightGrid.appendChild(buildInfoField('출발 예약번호', 'text', trip.flight.outboundReserveNo, v => { trip.flight.outboundReserveNo = v; saveState(); }));
     flightGrid.appendChild(buildInfoField('귀국 항공편', 'text', trip.flight.returnNo, v => { trip.flight.returnNo = v; saveState(); }));
     flightGrid.appendChild(buildInfoField('귀국 일시', 'datetime-local', trip.flight.returnAt, v => { trip.flight.returnAt = v; saveState(); }));
+    flightGrid.appendChild(buildInfoField('귀국 예약번호', 'text', trip.flight.returnReserveNo, v => { trip.flight.returnReserveNo = v; saveState(); }));
+    const passengersField = buildInfoField('탑승객', 'text', trip.flight.passengers, v => { trip.flight.passengers = v; saveState(); });
+    passengersField.classList.add('span-2');
+    flightGrid.appendChild(passengersField);
     flightSection.appendChild(flightGrid);
     tripContent.appendChild(flightSection);
 
@@ -588,6 +804,187 @@
     stayGrid.appendChild(buildInfoField('체크아웃', 'date', trip.stay.checkOut, v => { trip.stay.checkOut = v; saveState(); }));
     staySection.appendChild(stayGrid);
     tripContent.appendChild(staySection);
+
+    const itinerarySection = document.createElement('div');
+    itinerarySection.className = 'itinerary-section';
+
+    const itineraryTitle = document.createElement('div');
+    itineraryTitle.className = 'info-title';
+    itineraryTitle.textContent = '📅 여행 일정';
+    itinerarySection.appendChild(itineraryTitle);
+
+    const dayContainer = document.createElement('div');
+    itinerarySection.appendChild(dayContainer);
+
+    const addDayRow = document.createElement('div');
+    addDayRow.className = 'add-day-row';
+    const newDayInput = document.createElement('input');
+    newDayInput.type = 'date';
+    const addDayBtn = document.createElement('button');
+    addDayBtn.textContent = '날짜 추가';
+    addDayRow.appendChild(newDayInput);
+    addDayRow.appendChild(addDayBtn);
+    itinerarySection.appendChild(addDayRow);
+
+    tripContent.appendChild(itinerarySection);
+
+    function startEditActivity(span, activity, onDone) {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'edit-input';
+      input.value = activity.title;
+      input.maxLength = 40;
+      span.replaceWith(input);
+      input.focus();
+      input.select();
+
+      let committed = false;
+      function commit() {
+        if (committed) return;
+        committed = true;
+        const val = input.value.trim();
+        activity.title = val || activity.title;
+        saveState();
+        onDone();
+      }
+      input.addEventListener('blur', commit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { input.blur(); }
+        if (e.key === 'Escape') { committed = true; onDone(); }
+      });
+    }
+
+    function renderItinerary() {
+      dayContainer.innerHTML = '';
+      const days = trip.itinerary.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+
+      if (days.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = '날짜를 추가해서 일정을 기록해보세요.';
+        dayContainer.appendChild(empty);
+        return;
+      }
+
+      days.forEach((day, dayOrderIdx) => {
+        const block = document.createElement('div');
+        block.className = 'day-block';
+
+        const header = document.createElement('div');
+        header.className = 'day-header';
+        const titleEl = document.createElement('span');
+        titleEl.className = 'day-title';
+        titleEl.textContent = `${dayOrderIdx + 1}일차 · ${dayLabel(day.date)}`;
+        const delDayBtn = document.createElement('button');
+        delDayBtn.className = 'day-del';
+        delDayBtn.textContent = '✕';
+        delDayBtn.title = '이 날짜 삭제';
+        delDayBtn.addEventListener('click', () => {
+          if (!confirm(`${dayLabel(day.date)} 일정을 삭제할까요?`)) return;
+          trip.itinerary = trip.itinerary.filter(d => d.date !== day.date);
+          saveState();
+          renderItinerary();
+        });
+        header.appendChild(titleEl);
+        header.appendChild(delDayBtn);
+        block.appendChild(header);
+
+        const ul = document.createElement('ul');
+        ul.className = 'activities';
+
+        const sortedActivities = day.activities
+          .map((a, idx) => ({ activity: a, idx }))
+          .sort((x, y) => (x.activity.time || '').localeCompare(y.activity.time || ''));
+
+        sortedActivities.forEach(({ activity, idx }) => {
+          const li = document.createElement('li');
+          li.className = 'activity';
+
+          const timeEl = document.createElement('span');
+          timeEl.className = 'activity-time';
+          timeEl.textContent = activity.time || '--:--';
+
+          const catEl = document.createElement('span');
+          catEl.className = 'activity-cat';
+          catEl.textContent = ACTIVITY_EMOJI[activity.category] || '📌';
+          catEl.title = activity.category;
+
+          const titleSpan = document.createElement('span');
+          titleSpan.className = 'activity-title';
+          titleSpan.textContent = activity.title;
+          titleSpan.title = '클릭해서 수정';
+          titleSpan.addEventListener('click', () => startEditActivity(titleSpan, activity, renderItinerary));
+
+          const delBtn = document.createElement('button');
+          delBtn.className = 'del-btn';
+          delBtn.textContent = '✕';
+          delBtn.title = '삭제';
+          delBtn.addEventListener('click', () => {
+            day.activities.splice(idx, 1);
+            saveState();
+            renderItinerary();
+          });
+
+          li.appendChild(timeEl);
+          li.appendChild(catEl);
+          li.appendChild(titleSpan);
+          li.appendChild(delBtn);
+          ul.appendChild(li);
+        });
+
+        block.appendChild(ul);
+
+        const addActRow = document.createElement('div');
+        addActRow.className = 'activity-add-row';
+        const timeInput = document.createElement('input');
+        timeInput.type = 'time';
+        const catSelect = document.createElement('select');
+        ACTIVITY_CATEGORIES.forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = cat;
+          opt.textContent = cat;
+          catSelect.appendChild(opt);
+        });
+        const titleInput = document.createElement('input');
+        titleInput.type = 'text';
+        titleInput.placeholder = '장소/활동';
+        titleInput.maxLength = 40;
+        const addActBtn = document.createElement('button');
+        addActBtn.textContent = '추가';
+
+        function addActivity() {
+          const val = titleInput.value.trim();
+          if (!val) return;
+          day.activities.push({ time: timeInput.value, category: catSelect.value, title: val });
+          titleInput.value = '';
+          timeInput.value = '';
+          saveState();
+          renderItinerary();
+        }
+        addActBtn.addEventListener('click', addActivity);
+        titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addActivity(); });
+
+        addActRow.appendChild(timeInput);
+        addActRow.appendChild(catSelect);
+        addActRow.appendChild(titleInput);
+        addActRow.appendChild(addActBtn);
+        block.appendChild(addActRow);
+
+        dayContainer.appendChild(block);
+      });
+    }
+
+    addDayBtn.addEventListener('click', () => {
+      const val = newDayInput.value;
+      if (!val) return;
+      if (trip.itinerary.some(d => d.date === val)) { alert('이미 추가된 날짜예요.'); return; }
+      trip.itinerary.push({ date: val, activities: [] });
+      newDayInput.value = '';
+      saveState();
+      renderItinerary();
+    });
+
+    renderItinerary();
 
     const presetRow = document.createElement('div');
     presetRow.className = 'preset-row';
