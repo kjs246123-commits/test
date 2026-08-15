@@ -85,53 +85,6 @@
   }
   #themeToggle:hover { opacity: 0.85; }
 
-  /* trip section */
-  .trip-section {
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 20px;
-  }
-  .trip-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 10px;
-  }
-  .trip-chip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    border: 1px solid var(--border);
-    background: var(--chip-bg);
-    color: var(--chip-text);
-    border-radius: 999px;
-    padding: 6px 6px 6px 12px;
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .trip-chip.active {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: #fff;
-  }
-  .trip-chip .trip-del {
-    border: none;
-    background: rgba(0,0,0,0.08);
-    color: inherit;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    font-size: 11px;
-    line-height: 1;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .trip-chip.active .trip-del { background: rgba(255,255,255,0.25); }
-  .trip-chip .trip-del:hover { opacity: 0.8; }
 
   .active-trip-name {
     text-align: center;
@@ -516,10 +469,6 @@
     <button id="themeToggle" title="다크모드 전환">🌙</button>
   </div>
 
-  <div class="trip-section">
-    <div class="trip-chips" id="tripChips"></div>
-  </div>
-
   <div id="tripContent"></div>
 </div>
 
@@ -702,7 +651,6 @@
     return state.trips.find(t => t.id === state.activeTripId) || null;
   }
 
-  const tripChipsEl = document.getElementById('tripChips');
   const tripContent = document.getElementById('tripContent');
   const themeToggle = document.getElementById('themeToggle');
 
@@ -710,42 +658,6 @@
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
-  }
-
-  function renderTripChips() {
-    tripChipsEl.innerHTML = '';
-    state.trips.forEach(trip => {
-      const chip = document.createElement('div');
-      chip.className = 'trip-chip' + (trip.id === state.activeTripId ? ' active' : '');
-
-      const nameSpan = document.createElement('span');
-      nameSpan.textContent = trip.name;
-      nameSpan.addEventListener('click', () => {
-        state.activeTripId = trip.id;
-        activeSection = 'info';
-        saveState();
-        renderAll();
-      });
-
-      const delBtn = document.createElement('button');
-      delBtn.className = 'trip-del';
-      delBtn.textContent = '✕';
-      delBtn.title = '여행 삭제';
-      delBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (!confirm(`'${trip.name}' 여행을 삭제할까요? 담긴 준비물 목록도 함께 삭제돼요.`)) return;
-        state.trips = state.trips.filter(t => t.id !== trip.id);
-        if (state.activeTripId === trip.id) {
-          state.activeTripId = state.trips.length > 0 ? state.trips[0].id : null;
-        }
-        saveState();
-        renderAll();
-      });
-
-      chip.appendChild(nameSpan);
-      chip.appendChild(delBtn);
-      tripChipsEl.appendChild(chip);
-    });
   }
 
   function renderTripContent() {
@@ -1224,7 +1136,6 @@
   }
 
   function renderAll() {
-    renderTripChips();
     renderTripContent();
   }
 
