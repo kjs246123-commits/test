@@ -245,6 +245,11 @@
     text-decoration: none;
   }
   li.activity .activity-title:hover { background: var(--chip-bg); text-decoration: underline; }
+  li.activity .activity-title.activity-title-plain {
+    color: var(--text);
+    cursor: default;
+  }
+  li.activity .activity-title.activity-title-plain:hover { background: none; text-decoration: none; }
   li.activity .del-btn {
     border: none;
     background: none;
@@ -263,12 +268,18 @@
     border-radius: 8px;
     display: block;
   }
-  .activity-add-row {
+  .activity-add-form {
     display: flex;
+    flex-direction: column;
     gap: 6px;
     margin-top: 6px;
   }
-  .activity-add-row input[type="time"] {
+  .activity-add-form .add-row-top,
+  .activity-add-form .add-row-bottom {
+    display: flex;
+    gap: 6px;
+  }
+  .activity-add-form input[type="time"] {
     width: 92px;
     flex-shrink: 0;
     border: 1px solid var(--border);
@@ -279,8 +290,9 @@
     color: var(--text);
     outline: none;
   }
-  .activity-add-row select {
+  .activity-add-form select {
     flex-shrink: 0;
+    min-width: 0;
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 6px 2px;
@@ -289,9 +301,11 @@
     color: var(--text);
     outline: none;
   }
-  .activity-add-row input[type="text"] {
+  .activity-add-form input[type="text"],
+  .activity-add-form input[type="url"] {
     flex: 1;
     min-width: 0;
+    width: 100%;
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 6px 8px;
@@ -300,7 +314,7 @@
     color: var(--text);
     outline: none;
   }
-  .activity-add-row button {
+  .activity-add-form button {
     border: none;
     background: var(--accent);
     color: #fff;
@@ -310,7 +324,7 @@
     cursor: pointer;
     flex-shrink: 0;
   }
-  .activity-add-row button:hover { opacity: 0.9; }
+  .activity-add-form button:hover { opacity: 0.9; }
   .add-day-row { display: flex; gap: 6px; }
   .add-day-row input[type="date"] {
     flex: 1;
@@ -514,21 +528,6 @@
 
   const ACTIVITY_CATEGORIES = ['이동', '관광', '식사', '카페', '숙소', '기타'];
   // 활동 제목이 아래 key와 정확히 일치할 때만 대표 사진을 보여줌 (위키미디어 커먼즈에서 확인된 이미지만 등록)
-  const PLACE_IMAGES = {
-    '비자림': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Bijarim_Forest.jpg/500px-Bijarim_Forest.jpg',
-    '월정리 해변': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Jeju_woljeongri_beach_1.jpg/500px-Jeju_woljeongri_beach_1.jpg',
-    '김녕해변': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/%EA%B9%80%EB%85%95%EC%84%B1%EC%84%B8%EA%B8%B0%ED%95%B4%EB%B3%80.JPG/500px-%EA%B9%80%EB%85%95%EC%84%B1%EC%84%B8%EA%B8%B0%ED%95%B4%EB%B3%80.JPG',
-    '섭지코지': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Jeju_Island_Seopjikoji.jpg/500px-Jeju_Island_Seopjikoji.jpg',
-    '용눈이오름': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/%EC%9A%A9%EB%88%88%EC%9D%B4%EC%98%A4%EB%A6%84_(2018.05.08).jpg/500px-%EC%9A%A9%EB%88%88%EC%9D%B4%EC%98%A4%EB%A6%84_(2018.05.08).jpg',
-    '한라산 등반 (영실코스)': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Wooden_staircase_along_Yeongsil_Trail_with_the_mountains_of_Hallasan_Park_Jeju_Island_South_Korea.jpg/500px-Wooden_staircase_along_Yeongsil_Trail_with_the_mountains_of_Hallasan_Park_Jeju_Island_South_Korea.jpg',
-    '신창풍차해안도로': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Sinchang_Windmill_Coastal_Road_05.jpg/500px-Sinchang_Windmill_Coastal_Road_05.jpg',
-    '용머리해안': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/%EC%A0%9C%EC%A3%BC_%EC%9A%A9%EB%A8%B8%EB%A6%AC%ED%95%B4%EC%95%88_(Jeju_Yongmeori_Coast).jpg/500px-%EC%A0%9C%EC%A3%BC_%EC%9A%A9%EB%A8%B8%EB%A6%AC%ED%95%B4%EC%95%88_(Jeju_Yongmeori_Coast).jpg',
-    '곶자왈': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Gotjawal_Forest.jpg/500px-Gotjawal_Forest.jpg',
-    '테우리길': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Gotjawal_Forest.jpg/500px-Gotjawal_Forest.jpg',
-    '영실휴게소': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Wooden_staircase_along_Yeongsil_Trail_with_the_mountains_of_Hallasan_Park_Jeju_Island_South_Korea.jpg/500px-Wooden_staircase_along_Yeongsil_Trail_with_the_mountains_of_Hallasan_Park_Jeju_Island_South_Korea.jpg',
-    '소금바치순이네 (돌문어볶음)': 'https://d12zq4w4guyljn.cloudfront.net/300_300_20260807045419_photo1_307ea53741e8.webp',
-    '조천수산 (저녁)': 'https://d12zq4w4guyljn.cloudfront.net/300_300_20260512012924_photo1_3236b00bc262.webp',
-  };
   const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
   const PRESETS = {
@@ -630,35 +629,83 @@
         {
           date: '2026-08-22',
           activities: [
-            { time: '', category: '이동', title: '렌터카 수령' },
-            { time: '', category: '관광', title: '비자림' },
-            { time: '', category: '관광', title: '월정리 해변' },
-            { time: '', category: '관광', title: '김녕해변' },
-            { time: '', category: '식사', title: '소금바치순이네 (돌문어볶음)' },
-            { time: '', category: '관광', title: '섭지코지' },
-            { time: '', category: '카페', title: '섭지코지 근처 카페' },
-            { time: '', category: '관광', title: '용눈이오름' },
+            { time: '', category: '이동', title: '렌터카 수령', link: '', image: null },
+            {
+              time: '', category: '관광', title: '비자림',
+              link: 'https://map.naver.com/p/entry/place/12370507',
+              image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Bijarim_Forest.jpg/500px-Bijarim_Forest.jpg',
+            },
+            {
+              time: '', category: '관광', title: '월정리 해변',
+              link: 'https://map.naver.com/p/entry/place/20561777',
+              image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Jeju_woljeongri_beach_1.jpg/500px-Jeju_woljeongri_beach_1.jpg',
+            },
+            {
+              time: '', category: '관광', title: '김녕해변',
+              link: 'https://map.naver.com/p/entry/place/13491485',
+              image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/%EA%B9%80%EB%85%95%EC%84%B1%EC%84%B8%EA%B8%B0%ED%95%B4%EB%B3%80.JPG/500px-%EA%B9%80%EB%85%95%EC%84%B1%EC%84%B8%EA%B8%B0%ED%95%B4%EB%B3%80.JPG',
+            },
+            {
+              time: '', category: '식사', title: '소금바치순이네 (돌문어볶음)',
+              link: 'https://map.naver.com/p/entry/place/36690197',
+              image: 'https://d12zq4w4guyljn.cloudfront.net/300_300_20260807045419_photo1_307ea53741e8.webp',
+            },
+            {
+              time: '', category: '관광', title: '섭지코지',
+              link: 'https://map.naver.com/p/entry/place/13490878',
+              image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Jeju_Island_Seopjikoji.jpg/500px-Jeju_Island_Seopjikoji.jpg',
+            },
+            { time: '', category: '카페', title: '섭지코지 근처 카페', link: '', image: null },
+            {
+              time: '', category: '관광', title: '용눈이오름',
+              link: 'https://map.naver.com/p/entry/place/13529824',
+              image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/%EC%9A%A9%EB%88%88%EC%9D%B4%EC%98%A4%EB%A6%84_(2018.05.08).jpg/500px-%EC%9A%A9%EB%88%88%EC%9D%B4%EC%98%A4%EB%A6%84_(2018.05.08).jpg',
+            },
           ],
         },
         {
           date: '2026-08-23',
           activities: [
-            { time: '', category: '이동', title: '영실휴게소' },
-            { time: '', category: '관광', title: '한라산 등반 (영실코스)' },
-            { time: '', category: '관광', title: '신창풍차해안도로' },
-            { time: '', category: '식사', title: '흑돼지' },
+            {
+              time: '', category: '이동', title: '영실휴게소',
+              link: 'https://map.naver.com/p/entry/place/11781222',
+              image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Wooden_staircase_along_Yeongsil_Trail_with_the_mountains_of_Hallasan_Park_Jeju_Island_South_Korea.jpg/500px-Wooden_staircase_along_Yeongsil_Trail_with_the_mountains_of_Hallasan_Park_Jeju_Island_South_Korea.jpg',
+            },
+            {
+              time: '', category: '관광', title: '한라산 등반 (영실코스)',
+              link: 'https://map.naver.com/p/entry/place/11781222',
+              image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Wooden_staircase_along_Yeongsil_Trail_with_the_mountains_of_Hallasan_Park_Jeju_Island_South_Korea.jpg/500px-Wooden_staircase_along_Yeongsil_Trail_with_the_mountains_of_Hallasan_Park_Jeju_Island_South_Korea.jpg',
+            },
+            {
+              time: '', category: '관광', title: '신창풍차해안도로',
+              link: 'https://map.naver.com/p/entry/place/17040007',
+              image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Sinchang_Windmill_Coastal_Road_05.jpg/500px-Sinchang_Windmill_Coastal_Road_05.jpg',
+            },
+            { time: '', category: '식사', title: '흑돼지', link: '', image: null },
           ],
         },
         {
           date: '2026-08-24',
           activities: [
-            { time: '', category: '숙소', title: '체크아웃' },
-            { time: '', category: '관광', title: '용머리해안' },
-            { time: '', category: '관광', title: '곶자왈' },
-            { time: '', category: '관광', title: '테우리길' },
-            { time: '', category: '식사', title: '점심식사' },
-            { time: '', category: '이동', title: '조천으로 이동' },
-            { time: '16:00', category: '식사', title: '조천수산 (저녁)' },
+            { time: '', category: '숙소', title: '체크아웃', link: '', image: null },
+            {
+              time: '', category: '관광', title: '용머리해안',
+              link: 'https://map.naver.com/p/entry/place/13491455',
+              image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/%EC%A0%9C%EC%A3%BC_%EC%9A%A9%EB%A8%B8%EB%A6%AC%ED%95%B4%EC%95%88_(Jeju_Yongmeori_Coast).jpg/500px-%EC%A0%9C%EC%A3%BC_%EC%9A%A9%EB%A8%B8%EB%A6%AC%ED%95%B4%EC%95%88_(Jeju_Yongmeori_Coast).jpg',
+            },
+            {
+              time: '', category: '관광', title: '곶자왈',
+              link: 'https://map.naver.com/p/entry/place/36992417',
+              image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Gotjawal_Forest.jpg/500px-Gotjawal_Forest.jpg',
+            },
+            { time: '', category: '관광', title: '테우리길', link: '', image: null },
+            { time: '', category: '식사', title: '점심식사', link: '', image: null },
+            { time: '', category: '이동', title: '조천으로 이동', link: '', image: null },
+            {
+              time: '16:00', category: '식사', title: '조천수산 (저녁)',
+              link: 'https://map.naver.com/p/entry/place/19366685',
+              image: 'https://d12zq4w4guyljn.cloudfront.net/300_300_20260512012924_photo1_3236b00bc262.webp',
+            },
           ],
         },
       ],
@@ -686,6 +733,23 @@
     trip.itinerary.forEach(day => {
       day.activities.forEach(a => {
         if (TITLE_FIXES[a.title]) a.title = TITLE_FIXES[a.title];
+      });
+    });
+  }
+
+  // 이전에 링크/사진 개념이 없던 시절 등록된 활동에도, 제목이 일치하면
+  // 최신 시드의 링크·사진을 채워 넣는다 (사용자가 이미 채워둔 값은 건드리지 않음)
+  function backfillActivityLinks(trip) {
+    const seed = makeJejuSeedTrip();
+    const seedByTitle = {};
+    seed.itinerary.forEach(day => day.activities.forEach(a => { seedByTitle[a.title] = a; }));
+    trip.itinerary.forEach(day => {
+      day.activities.forEach(a => {
+        const s = seedByTitle[a.title];
+        if (s && a.link === undefined) {
+          a.link = s.link;
+          a.image = s.image;
+        }
       });
     });
   }
@@ -726,6 +790,7 @@
       state.trips.unshift(makeJejuSeedTrip());
     } else {
       fixKnownTitleTypos(existingJejuTrip);
+      backfillActivityLinks(existingJejuTrip);
       mergeSeedIntoJejuTrip(existingJejuTrip);
     }
     state.activeTripId = JEJU_TRIP_ID;
@@ -988,13 +1053,19 @@
           timeEl.title = '클릭해서 시간 수정';
           timeEl.addEventListener('click', () => startEditTime(timeEl, activity, renderItinerary));
 
-          const titleLink = document.createElement('a');
-          titleLink.className = 'activity-title';
-          titleLink.href = 'https://map.naver.com/p/search/' + encodeURIComponent(activity.title);
-          titleLink.target = '_blank';
-          titleLink.rel = 'noopener noreferrer';
-          titleLink.title = '네이버지도에서 보기';
-          titleLink.textContent = activity.title;
+          let titleEl;
+          if (activity.link) {
+            titleEl = document.createElement('a');
+            titleEl.className = 'activity-title';
+            titleEl.href = activity.link;
+            titleEl.target = '_blank';
+            titleEl.rel = 'noopener noreferrer';
+            titleEl.title = '링크로 이동';
+          } else {
+            titleEl = document.createElement('span');
+            titleEl.className = 'activity-title activity-title-plain';
+          }
+          titleEl.textContent = activity.title;
 
           const delBtn = document.createElement('button');
           delBtn.className = 'del-btn';
@@ -1007,18 +1078,33 @@
           });
 
           row.appendChild(timeEl);
-          row.appendChild(titleLink);
+          row.appendChild(titleEl);
           row.appendChild(delBtn);
           li.appendChild(row);
 
-          const imgUrl = PLACE_IMAGES[activity.title];
-          if (imgUrl) {
+          function appendThumb(src) {
             const thumb = document.createElement('img');
             thumb.className = 'activity-thumb';
-            thumb.src = imgUrl;
+            thumb.src = src;
             thumb.alt = activity.title;
             thumb.loading = 'lazy';
             li.appendChild(thumb);
+          }
+
+          if (activity.link) {
+            if (activity.image) {
+              appendThumb(activity.image);
+            } else if (activity.image === undefined) {
+              // 링크의 대표 이미지를 아직 시도해본 적 없으면 한 번 가져와서 캐시해둠
+              fetch('/api/og-image?url=' + encodeURIComponent(activity.link))
+                .then(r => (r.ok ? r.json() : { image: null }))
+                .then(data => {
+                  activity.image = data.image || null;
+                  saveState();
+                  if (activity.image) appendThumb(activity.image);
+                })
+                .catch(() => { activity.image = null; saveState(); });
+            }
           }
 
           ul.appendChild(li);
@@ -1026,8 +1112,11 @@
 
         block.appendChild(ul);
 
-        const addActRow = document.createElement('div');
-        addActRow.className = 'activity-add-row';
+        const addActForm = document.createElement('div');
+        addActForm.className = 'activity-add-form';
+
+        const addRowTop = document.createElement('div');
+        addRowTop.className = 'add-row-top';
         const timeInput = document.createElement('input');
         timeInput.type = 'time';
         const catSelect = document.createElement('select');
@@ -1041,26 +1130,40 @@
         titleInput.type = 'text';
         titleInput.placeholder = '장소/활동';
         titleInput.maxLength = 40;
+        addRowTop.appendChild(timeInput);
+        addRowTop.appendChild(catSelect);
+        addRowTop.appendChild(titleInput);
+
+        const addRowBottom = document.createElement('div');
+        addRowBottom.className = 'add-row-bottom';
+        const linkInput = document.createElement('input');
+        linkInput.type = 'url';
+        linkInput.placeholder = '링크 (선택, 있으면 이름 클릭 시 이동)';
         const addActBtn = document.createElement('button');
         addActBtn.textContent = '추가';
+        addRowBottom.appendChild(linkInput);
+        addRowBottom.appendChild(addActBtn);
 
         function addActivity() {
           const val = titleInput.value.trim();
           if (!val) return;
-          day.activities.push({ time: timeInput.value, category: catSelect.value, title: val });
+          const link = linkInput.value.trim();
+          const newActivity = { time: timeInput.value, category: catSelect.value, title: val, link };
+          if (!link) newActivity.image = null;
+          day.activities.push(newActivity);
           titleInput.value = '';
           timeInput.value = '';
+          linkInput.value = '';
           saveState();
           renderItinerary();
         }
         addActBtn.addEventListener('click', addActivity);
         titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addActivity(); });
+        linkInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addActivity(); });
 
-        addActRow.appendChild(timeInput);
-        addActRow.appendChild(catSelect);
-        addActRow.appendChild(titleInput);
-        addActRow.appendChild(addActBtn);
-        block.appendChild(addActRow);
+        addActForm.appendChild(addRowTop);
+        addActForm.appendChild(addRowBottom);
+        block.appendChild(addActForm);
 
         daySectionsWrap.appendChild(block);
       });
