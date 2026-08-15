@@ -702,7 +702,8 @@
     });
   }
 
-  function loadState() {
+  // 서버(공유 저장소)에 접근할 수 없을 때만 쓰는 이 브라우저만의 백업 데이터
+  function loadLocalFallbackState() {
     let state = null;
 
     try {
@@ -731,8 +732,11 @@
     if (!state) {
       state = { trips: [], activeTripId: null };
     }
+    return state;
+  }
 
-    // 제주도 여행은 접속할 때마다 항상 기본 화면으로 보이도록 보장
+  // 제주도 여행은 접속할 때마다 항상 기본 화면으로 보이도록 보장
+  function applyJejuTripGuarantee(state) {
     const existingJejuTrip = state.trips.find(t => t.id === JEJU_TRIP_ID);
     if (!existingJejuTrip) {
       state.trips.unshift(makeJejuSeedTrip());
@@ -742,16 +746,39 @@
       mergeSeedIntoJejuTrip(existingJejuTrip);
     }
     state.activeTripId = JEJU_TRIP_ID;
-
     return state;
   }
 
+  // 클라이언트 코드에만 있는 값이라 강력한 보안은 아니고, 그냥 API를 우연히
+  // 발견한 사람이 무심코 덮어쓰는 것 정도만 막는 최소한의 장치
+  const SYNC_TOKEN = 'jeju2026-sync-9f3k2';
+
   function saveState() {
     localStorage.setItem(TRIPS_KEY, JSON.stringify(state));
+    clearTimeout(saveState._t);
+    saveState._t = setTimeout(() => {
+      fetch('/api/trip-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: SYNC_TOKEN, state }),
+      }).catch(() => {});
+    }, 600);
   }
 
-  let state = loadState();
-  saveState();
+  async function fetchServerState() {
+    try {
+      const res = await fetch('/api/trip-state');
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.state || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 즉시 화면을 보여주기 위해 우선 이 브라우저의 캐시로 시작하고,
+  // 서버의 최신 데이터를 백그라운드로 받아와서 다르면 갱신함(여러 기기 동기화)
+  let state = applyJejuTripGuarantee(loadLocalFallbackState());
   let activeSection = 'info';
 
   function getActiveTrip() {
@@ -1317,6 +1344,23 @@
   });
 
   renderAll();
+
+  // 다른 기기에서 바꾼 내용이 있으면 백그라운드에서 받아와 화면을 갱신
+  (async function syncWithServer() {
+    const serverState = await fetchServerState();
+    if (serverState) {
+      serverState.trips.forEach(ensureTripDefaults);
+      const merged = applyJejuTripGuarantee(serverState);
+      if (JSON.stringify(merged) !== JSON.stringify(state)) {
+        state = merged;
+        localStorage.setItem(TRIPS_KEY, JSON.stringify(state));
+        renderAll();
+      }
+    } else {
+      // 서버에 아직 아무 데이터도 없으면(최초 연결), 지금 상태를 기준으로 만들어둠
+      saveState();
+    }
+  })();
 })();
 </script>
 </body>
