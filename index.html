@@ -110,10 +110,11 @@
     grid-template-columns: 1fr 1fr;
     gap: 8px 10px;
   }
-  .info-field { display: flex; flex-direction: column; gap: 3px; }
+  .info-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .info-field.span-2 { grid-column: 1 / -1; }
   .info-field label { font-size: 11px; color: var(--sub); }
   .info-field input {
+    width: 100%;
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 7px 8px;
