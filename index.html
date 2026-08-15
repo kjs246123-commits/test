@@ -133,35 +133,6 @@
   .trip-chip.active .trip-del { background: rgba(255,255,255,0.25); }
   .trip-chip .trip-del:hover { opacity: 0.8; }
 
-  .trip-add-row { display: flex; gap: 6px; }
-  .trip-add-row input {
-    flex: 1;
-    min-width: 0;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 10px;
-    font-size: 13px;
-    outline: none;
-    background: var(--card-bg);
-    color: var(--text);
-  }
-  .trip-add-row input:focus { border-color: var(--accent); }
-  .trip-add-row button {
-    border: none;
-    background: #2d3436;
-    color: #fff;
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 13px;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-  :root[data-theme="dark"] .trip-add-row button { background: #4a4f57; }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .trip-add-row button { background: #4a4f57; }
-  }
-  .trip-add-row button:hover { opacity: 0.9; }
-
   .active-trip-name {
     text-align: center;
     font-size: 15px;
@@ -547,10 +518,6 @@
 
   <div class="trip-section">
     <div class="trip-chips" id="tripChips"></div>
-    <div class="trip-add-row">
-      <input type="text" id="newTripInput" placeholder="여행 이름 (예: 2026년 8월 제주)" maxlength="30">
-      <button id="addTripBtn">여행 추가</button>
-    </div>
   </div>
 
   <div id="tripContent"></div>
@@ -736,8 +703,6 @@
   }
 
   const tripChipsEl = document.getElementById('tripChips');
-  const newTripInput = document.getElementById('newTripInput');
-  const addTripBtn = document.getElementById('addTripBtn');
   const tripContent = document.getElementById('tripContent');
   const themeToggle = document.getElementById('themeToggle');
 
@@ -1262,21 +1227,6 @@
     renderTripChips();
     renderTripContent();
   }
-
-  addTripBtn.addEventListener('click', () => {
-    const name = newTripInput.value.trim();
-    if (!name) return;
-    const id = makeId();
-    state.trips.push({ id, name, items: [], flight: makeEmptyFlight(), stay: makeEmptyStay(), itinerary: [] });
-    state.activeTripId = id;
-    activeSection = 'info';
-    newTripInput.value = '';
-    saveState();
-    renderAll();
-  });
-  newTripInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') addTripBtn.click();
-  });
 
   function applyTheme(theme) {
     if (theme === 'dark' || theme === 'light') {
