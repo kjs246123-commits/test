@@ -595,10 +595,44 @@
             { time: '', category: '관광', title: '용눈이오름' },
           ],
         },
-        { date: '2026-08-23', activities: [] },
-        { date: '2026-08-24', activities: [] },
+        {
+          date: '2026-08-23',
+          activities: [
+            { time: '', category: '이동', title: '영실휴게소 출발' },
+            { time: '', category: '관광', title: '한라산 등반 (영실코스)' },
+            { time: '', category: '관광', title: '신창풍차해안도로' },
+            { time: '', category: '식사', title: '흑돼지' },
+          ],
+        },
+        {
+          date: '2026-08-24',
+          activities: [
+            { time: '', category: '숙소', title: '체크아웃' },
+            { time: '', category: '관광', title: '영머리해안' },
+            { time: '', category: '관광', title: '곶자월' },
+            { time: '', category: '관광', title: '테우리길' },
+            { time: '', category: '식사', title: '점심식사' },
+            { time: '', category: '이동', title: '조천으로 이동' },
+            { time: '16:00', category: '식사', title: '조천수산 (저녁)' },
+          ],
+        },
       ],
     };
+  }
+
+  // 시드 데이터를 최신화할 때, 사용자가 이미 채워둔 날짜는 건드리지 않고
+  // 아직 비어있는 날짜만 기본값으로 채워 넣는다.
+  function mergeSeedIntoJejuTrip(trip) {
+    const seed = makeJejuSeedTrip();
+    seed.itinerary.forEach(seedDay => {
+      if (seedDay.activities.length === 0) return;
+      const existingDay = trip.itinerary.find(d => d.date === seedDay.date);
+      if (!existingDay) {
+        trip.itinerary.push({ date: seedDay.date, activities: seedDay.activities.slice() });
+      } else if (existingDay.activities.length === 0) {
+        existingDay.activities = seedDay.activities.slice();
+      }
+    });
   }
 
   function loadState() {
@@ -632,8 +666,11 @@
     }
 
     // 제주도 여행은 접속할 때마다 항상 기본 화면으로 보이도록 보장
-    if (!state.trips.some(t => t.id === JEJU_TRIP_ID)) {
+    const existingJejuTrip = state.trips.find(t => t.id === JEJU_TRIP_ID);
+    if (!existingJejuTrip) {
       state.trips.unshift(makeJejuSeedTrip());
+    } else {
+      mergeSeedIntoJejuTrip(existingJejuTrip);
     }
     state.activeTripId = JEJU_TRIP_ID;
 
