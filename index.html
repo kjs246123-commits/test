@@ -640,7 +640,7 @@
         {
           date: '2026-08-23',
           activities: [
-            { time: '', category: '이동', title: '영실휴게소 출발' },
+            { time: '', category: '이동', title: '영실휴게소' },
             { time: '', category: '관광', title: '한라산 등반 (영실코스)' },
             { time: '', category: '관광', title: '신창풍차해안도로' },
             { time: '', category: '식사', title: '흑돼지' },
@@ -678,7 +678,7 @@
   }
 
   // 이전 시드 데이터에 있던 오탈자(잘못된 지명)를 실제 저장된 데이터에서도 바로잡음
-  const TITLE_FIXES = { '영머리해안': '용머리해안', '곶자월': '곶자왈' };
+  const TITLE_FIXES = { '영머리해안': '용머리해안', '곶자월': '곶자왈', '영실휴게소 출발': '영실휴게소' };
   function fixKnownTitleTypos(trip) {
     trip.itinerary.forEach(day => {
       day.activities.forEach(a => {
